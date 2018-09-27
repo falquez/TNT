@@ -1,0 +1,44 @@
+{
+    "metadata": {
+        "description": "Example configuration file for the Ising Hamiltonian."
+    },
+    "tolerance": {
+        "convergence": 1e-10,
+        "eigenvalue": 1e-07,
+        "svd": 1e-09
+    },
+    "directories": {
+        "results": "results",
+        "network": "network"
+    },
+    "network": {
+        "length": 30,
+        "max_bond_dim": 20,
+        "topology": "MPS"
+    },
+    "hamiltonian": {
+        "dim": 2,
+        "mpo": {
+            "dim": 3,
+            "blocks": [
+                { "position": [1,1], "operator": "Id" },
+                { "position": [2,1], "expression": "sqrt(J)*Sz"},
+                { "position": [3,1], "expression": "-J*g*Sx" },
+                { "position": [3,2], "expression": "-sqrt(J)*Sz"},
+                { "position": [3,3], "operator": "Id" }
+            ]
+        }
+    },
+    "parameters": {
+        "J": 1.0,
+        "g": [0.0,2.0,21]
+    },
+    "operators": {
+        "Sx": { "rows": [ [ 0.0, 1.0 ], [ 1.0,  0.0 ] ] },
+        "Sz": { "rows": [ [ 1.0, 0.0 ], [ 0.0, -1.0 ] ] }
+    },
+    "observables": {
+        "corrSz": { "operator": "Sz", "type": "correlation" }
+    },
+    "restart": false
+}
