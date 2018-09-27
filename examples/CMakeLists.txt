@@ -1,4 +1,4 @@
-
+# Example applications
 
 add_executable( mps mps.cpp )
 add_executable( mps_single mps_single.cpp )

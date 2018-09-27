@@ -19,10 +19,7 @@
 #include <boost/filesystem.hpp>
 #include <fstream>
 #include <iomanip>
-#include <iostream>
 #include <limits>
-#include <memory>
-#include <numeric>
 #include <vector>
 
 #include <TNT/configuration/configuration.h>
@@ -111,15 +108,12 @@ int main(int argc, char **argv) {
 
       // Optimize A[s]
       std::cout << "INFO: Optimize A[" << s1 << "]"
-                << ", acc=" << config.tolerance("eigenvalue") << std::endl;
+                << ", tol=" << config.tolerance("eigenvalue") << std::endl;
       double ew;
       std::tie(ew, A[s1]) = ES({{"s1,a1,a2", "s1',a1',a2'"}})
                                 .useInitial()
                                 .setTolerance(config.tolerance("eigenvalue"))
                                 .optimize(A[s1]("s3,a,a2"));
-
-      // @TODO: read max bond dimension from predefined vector, not current dim
-      // auto nsv = A[l]("s1,a1,a").dimension("a");
 
       auto norm = dir == Network::MPS::Sweep::Direction::Right ? Tensor::SVDNorm::left
                                                                : Tensor::SVDNorm::right;
@@ -135,9 +129,8 @@ int main(int argc, char **argv) {
       auto B = A[s2];
       A[s2](subA) = B(subB) * R("a3,a2");
 
-      auto E2 = A(W * W);
       state.eigenvalue = ew;
-      state.variance = E2 - ew * ew;
+      state.variance = A(W2) - ew * ew;
 
       std::cout << " ip=" << i_p << " swp=" << state.iteration / L;
       std::cout << " i=" << state.iteration << ", l=" << l << ", r=" << r << ", ";

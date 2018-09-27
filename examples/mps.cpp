@@ -19,10 +19,7 @@
 #include <boost/filesystem.hpp>
 #include <fstream>
 #include <iomanip>
-#include <iostream>
 #include <limits>
-#include <memory>
-#include <numeric>
 #include <vector>
 
 #include <TNT/configuration/configuration.h>
@@ -111,7 +108,7 @@ int main(int argc, char **argv) {
 
       // Optimize A[l]*A[l+1]
       std::cout << "INFO: Optimize A[" << l << "]*A[" << r << "]"
-                << ", acc=" << config.tolerance("eigenvalue") << std::endl;
+                << ", tol=" << config.tolerance("eigenvalue") << std::endl;
       auto [ew, T] = ES({{"s1,s3,a1,a2", "s1',s3',a1',a2'"}})
                          .useInitial()
                          .setTolerance(config.tolerance("eigenvalue"))
@@ -127,7 +124,7 @@ int main(int argc, char **argv) {
 
       // Perform SVD on T and reassign to A[l], A[r]
       std::cout << "INFO: Decompose T into A[" << l << "]*A[" << r << "]"
-                << " nsv=" << nsv << ", acc=" << config.tolerance("svd") << std::endl;
+                << " nsv=" << nsv << ", tol=" << config.tolerance("svd") << std::endl;
       if (nsv < 4)
         std::tie(A[l], A[r]) =
             T("s1,s3,a1,a2").SVD({{"s1,a1,a3", "s3,a3,a2"}}, {norm, nsv, config.tolerance("svd")});
@@ -136,9 +133,8 @@ int main(int argc, char **argv) {
             T("s1,s3,a1,a2")
                 .SVD({{"s1,a1,a3", "s3,a3,a2"}}, A[l], A[r], {norm, nsv, config.tolerance("svd")});
 
-      auto E2 = A(W * W);
       state.eigenvalue = ew;
-      state.variance = E2 - ew * ew;
+      state.variance = A(W2) - ew * ew;
 
       std::cout << " ip=" << i_p << " swp=" << state.iteration / L;
       std::cout << " i=" << state.iteration << ", l=" << l << ", r=" << r << ", ";

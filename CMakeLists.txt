@@ -23,9 +23,10 @@ add_library(boost INTERFACE IMPORTED)
 include_directories($ENV{HOME}/dist/include)
 link_directories($ENV{HOME}/dist/lib)
 
+enable_testing()
+
 # TNT library
 add_subdirectory(TNT)
 # Examples
 add_subdirectory(examples)
 
-enable_testing()

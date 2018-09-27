@@ -19,10 +19,7 @@
 #include <boost/filesystem.hpp>
 #include <fstream>
 #include <iomanip>
-#include <iostream>
 #include <limits>
-#include <memory>
-#include <numeric>
 #include <vector>
 
 #include <TNT/configuration/configuration.h>
@@ -30,8 +27,6 @@
 #include <TNT/network/network.h>
 #include <TNT/operator/mpo.h>
 #include <TNT/operator/observable.h>
-#include <TNT/tensor/contraction.h>
-#include <TNT/tensor/eigensolver.h>
 #include <TNT/tensor/sparse/contraction.h>
 #include <TNT/tensor/sparse/eigensolver.h>
 #include <TNT/tensor/tensor.h>
@@ -115,7 +110,7 @@ int main(int argc, char **argv) {
 
       // Optimize A[l]*A[l+1]
       std::cout << "INFO: Optimize A[" << l << "]*A[" << r << "]"
-                << ", acc=" << config.tolerance("eigenvalue") << std::endl;
+                << ", tol=" << config.tolerance("eigenvalue") << std::endl;
       auto [ew, T] = ES({{"s1,s3,a1,a2", "s1',s3',a1',a2'"}})
                          .useInitial()
                          .setTolerance(config.tolerance("eigenvalue"))
@@ -131,13 +126,12 @@ int main(int argc, char **argv) {
 
       // Perform SVD on T and reassign to A[l], A[r]
       std::cout << "INFO: Decompose T into A[" << l << "]*A[" << r << "]"
-                << " nsv=" << nsv << ", acc=" << config.tolerance("svd") << std::endl;
+                << " nsv=" << nsv << ", tol=" << config.tolerance("svd") << std::endl;
       std::tie(A[l], A[r]) =
           T("s1,s3,a1,a2").SVD({{"s1,a1,a3", "s3,a3,a2"}}, {norm, nsv, config.tolerance("svd")});
 
-      auto E2 = A(W * W);
       state.eigenvalue = ew;
-      state.variance = (E2 - ew * ew) / (L * params.at("VAR"));
+      state.variance = (A(W2) - ew * ew) / (L * params.at("VAR"));
 
       std::cout << " ip=" << i_p << " swp=" << state.iteration / L;
       std::cout << " i=" << state.iteration << ", l=" << l << ", r=" << r << ", ";
@@ -166,6 +160,7 @@ int main(int argc, char **argv) {
       }
     }
 
+    // Write observables to text file
     for (const auto &[i_o, obs] : observables.iterate()) {
       std::ofstream ofile(param_dir + "/" + obs.name() + ".txt");
       auto result = A(obs);
@@ -180,6 +175,7 @@ int main(int argc, char **argv) {
       ofile << std::endl;
     }
 
+    // Write reuslts to text file
     std::ofstream ofile(param_dir + "/result.txt");
     ofile << "# D L params.. E var" << std::endl;
     ofile << config.network.dimB << " " << L << " ";
