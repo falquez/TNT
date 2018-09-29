@@ -30,9 +30,8 @@
 namespace TNT::Algebra {
 
   template <typename F>
-  int tensorMult(const std::array<std::vector<int>, 3> &dims,
-                 const std::array<std::string, 3> &subscripts, const std::array<F *, 3> &data,
-                 const double &gamma) {
+  int tensorMult(const std::array<std::vector<int>, 3> &dims, const std::array<std::string, 3> &subscripts,
+		 const std::array<F *, 3> &data, const double &gamma) {
     int err = 0;
 
     std::array<tcl::Tensor<F>, 3> T;
@@ -40,8 +39,7 @@ namespace TNT::Algebra {
     for (int i = 0; i < 3; i++)
       T[i] = tcl::Tensor<F>(dims[i], data[i]);
 
-    err = tcl::tensorMult<F>(1.0, T[0][subscripts[0]], T[1][subscripts[1]], gamma,
-                             T[2][subscripts[2]]);
+    err = tcl::tensorMult<F>(1.0, T[0][subscripts[0]], T[1][subscripts[1]], gamma, T[2][subscripts[2]]);
 
     return err;
   }
@@ -75,8 +73,8 @@ namespace TNT::Algebra {
       T[curr] = tcl::Tensor<F>(dims, seq.data[i]);
 
       std::vector<std::string> idx3;
-      std::set_symmetric_difference(idx[prev].begin(), idx[prev].end(), idx[curr].begin(),
-                                    idx[curr].end(), std::back_inserter(idx3));
+      std::set_symmetric_difference(idx[prev].begin(), idx[prev].end(), idx[curr].begin(), idx[curr].end(),
+				    std::back_inserter(idx3));
       std::string sub3 = Util::concat(idx3, ",");
 
       std::vector<int> dim3(idx3.size());
@@ -111,8 +109,8 @@ namespace TNT::Algebra {
     }
 
     // Permute result
-    auto plan = hptt::create_plan(&perm[0], dimA.size(), 1.0, buff[curr].get(), &dimA[0], NULL, 0.0,
-                                  result, NULL, hptt::ESTIMATE, Algebra::numThreads);
+    auto plan = hptt::create_plan(&perm[0], dimA.size(), 1.0, buff[curr].get(), &dimA[0], NULL, 0.0, result, NULL,
+				  hptt::ESTIMATE, Algebra::numThreads);
     plan->execute();
 
     return err;
@@ -121,14 +119,13 @@ namespace TNT::Algebra {
 
 template int TNT::Algebra::tensorMult<double>(const std::array<std::vector<int>, 3> &dims,
                                               const std::array<std::string, 3> &subscripts,
-                                              const std::array<double *, 3> &data,
-                                              const double &gamma);
-template int TNT::Algebra::tensorMult<std::complex<double>>(
-    const std::array<std::vector<int>, 3> &dims, const std::array<std::string, 3> &subscripts,
-    const std::array<std::complex<double> *, 3> &data, const double &gamma);
+					      const std::array<double *, 3> &data, const double &gamma);
+template int TNT::Algebra::tensorMult<std::complex<double>>(const std::array<std::vector<int>, 3> &dims,
+							    const std::array<std::string, 3> &subscripts,
+							    const std::array<std::complex<double> *, 3> &data,
+							    const double &gamma);
 
 template int TNT::Algebra::tensorMult<double>(double *result, const std::string subscript,
                                               const Tensor::Contraction<double> &seq);
-template int TNT::Algebra::tensorMult<std::complex<double>>(
-    std::complex<double> *result, const std::string subscript,
-    const Tensor::Contraction<std::complex<double>> &seq);
+template int TNT::Algebra::tensorMult<std::complex<double>>(std::complex<double> *result, const std::string subscript,
+							    const Tensor::Contraction<std::complex<double>> &seq);
