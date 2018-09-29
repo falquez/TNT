@@ -49,6 +49,7 @@ namespace TNT::Network::MPS {
     double conv_tolerance;
 
   public:
+    MPS() : length{0} {}
     MPS(const Configuration::Configuration<F> &conf);
 
     MPS(const unsigned int &dimH, const ULong &length, const unsigned int &dimB);
@@ -62,6 +63,11 @@ namespace TNT::Network::MPS {
 
     Tensor::Tensor<F> &operator[](unsigned int site) { return _A[site - 1]; }
 
+    // Scalar product <A|B>
+    F operator()(const MPS<F> &B) const;
+
+    // Scalar product <A|B> without given B sites
+    Tensor::Tensor<F> operator()(const MPS<F> &B, const std::vector<unsigned long> &sites) const;
     F operator()(const Operator::MPO<F> &mpo) const;
     F operator()(const Operator::Sparse::MPO<F> &mpo) const;
 

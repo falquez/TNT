@@ -109,8 +109,7 @@ namespace TNT::Network::MPS {
       int curr = l % 2;
       int next = (l + 1) % 2;
       Tensor::Tensor<F> _Ac = _A[l].conjugate();
-      T[next]("b2,a2,a2'") = T[curr]("b1,a1,a1'") * _A[l]("s1,a1,a2") * mpo[l + 1]("b1,b2,s1,s1'") *
-                             _Ac("s1',a1',a2'");
+      T[next]("b2,a2,a2'") = T[curr]("b1,a1,a1'") * _A[l]("s1,a1,a2") * mpo[l + 1]("b1,b2,s1,s1'") * _Ac("s1',a1',a2'");
     }
 
     F result = T[length % 2][0];
@@ -130,13 +129,91 @@ namespace TNT::Network::MPS {
       int curr = l % 2;
       int next = (l + 1) % 2;
       Tensor::Tensor<F> _Ac = _A[l].conjugate();
-      T[next]("b2,a2,a2'") =
-          T[curr]("b1,a1,a1'") * _A[l]("s1,a1,a2") * W("b1,b2,s1,s1'") * _Ac("s1',a1',a2'");
+      T[next]("b2,a2,a2'") = T[curr]("b1,a1,a1'") * _A[l]("s1,a1,a2") * W("b1,b2,s1,s1'") * _Ac("s1',a1',a2'");
     }
 
     F result = T[length % 2][0];
 
     return result;
+  }
+
+  // Scalar product <A|B>
+  template <typename F>
+  F MPS<F>::operator()(const MPS<F> &B) const {
+    assert(length == B.length && dimH == B.dimH);
+    std::array<Tensor::Tensor<F>, 2> T;
+
+    T[0] = Tensor::Tensor<F>({1, 1}, 1.0);
+    for (unsigned int l = 0; l < length; l++) {
+      unsigned int curr = l % 2;
+      unsigned int next = (l + 1) % 2;
+      Tensor::Tensor<F> _Ac = _A[l].conjugate();
+      T[next]("a2,a2'") = T[curr]("a1,a1'") * B._A[l]("s1,a1,a2") * _Ac("s1,a1',a2'");
+    }
+
+    F result = T[length % 2][0];
+
+    return result;
+  }
+
+  // Scalar product <A|B> without given B sites
+  template <typename F>
+  Tensor::Tensor<F> MPS<F>::operator()(const MPS<F> &B, const std::vector<unsigned long> &sites) const {
+    assert(length == B.length && dimH == B.dimH);
+    // Currently support only single site or 2-site
+    assert(sites.size() == 1 || (sites.size() == 2 && sites[0] == sites[1] - 1));
+
+    std::vector<unsigned long> ml(2);
+    ml[0] = sites[0] - 1;
+    ml[1] = sites.size() == 1 ? ml[0] : ml[0] + 1;
+
+    std::array<Tensor::Tensor<F>, 2> L, R;
+
+    // std::cout << "Projector sites " << sites.size() << ": " << ml[0] << "," << ml[1] << std::endl;
+
+    L[0] = Tensor::Tensor<F>({1, 1}, 1.0);
+    for (unsigned long l = 0; l < ml[0]; l++) {
+      unsigned int curr = l % 2;
+      unsigned int next = (l + 1) % 2;
+      Tensor::Tensor<F> _Ac = _A[l].conjugate();
+      // std::cout << "Contracting " << l << std::endl;
+      L[next]("a2,a2'") = L[curr]("a1,a1'") * B._A[l]("s1,a1,a2") * _Ac("s1,a1',a2'");
+    }
+
+    // std::cout << "L[" << ml[0] % 2 << "]=" << L[ml[0] % 2] << std::endl;
+
+    R[1] = Tensor::Tensor<F>({1, 1}, 1.0);
+    for (unsigned long l = 1; l < length - ml[1]; l++) {
+      unsigned int curr = l % 2;
+      unsigned int next = (l + 1) % 2;
+      Tensor::Tensor<F> _Ac = _A[length - l].conjugate();
+      // std::cout << "Contracting " << length - l << std::endl;
+      R[next]("a1,a1'") = R[curr]("a2,a2'") * B._A[length - l]("s1,a1,a2") * _Ac("s1,a1',a2'");
+    }
+    // std::cout << "R[" << (length - ml[1]) % 2 << "]=" << R[(length - ml[1]) % 2] << std::endl;
+
+    Tensor::Tensor<F> P, _Ac1, _Ac2;
+    switch (sites.size()) {
+    case 1:
+      _Ac1 = _A[ml[0]].conjugate();
+      P("s1,a1,a2") = L[ml[0] % 2]("a1,a1'") * _Ac1("s1,a1',a2'") * R[(length - ml[1]) % 2]("a2,a2'");
+      break;
+    case 2:
+      _Ac1 = _A[ml[0]].conjugate();
+      _Ac2 = _A[ml[1]].conjugate();
+      // std::cout << "Contracting " << ml[0] << ", " << ml[1] << std::endl;
+      // std::cout << "_Ac1[" << ml[0] << "]" << _Ac1("s1,a1',a") << std::endl;
+      // std::cout << "_Ac2[" << ml[1] << "]" << _Ac2("s2,a,a2'") << std::endl;
+      P("s1,s2,a1,a2") =
+	  L[ml[0] % 2]("a1,a1'") * _Ac1("s1,a1',a") * _Ac2("s2,a,a2'") * R[(length - ml[1]) % 2]("a2,a2'");
+      // std::cout << "P(\"s1,s2,a1,a2\")" << P("s1,s2,a1,a2") << std::endl;
+      break;
+    default:
+      throw std::invalid_argument("Number of sites > 2 not yet supported");
+      break;
+    }
+
+    return P;
   }
 
   template <typename F>
@@ -162,11 +239,10 @@ namespace TNT::Network::MPS {
             Tensor::Tensor<F> _Ac = _A[l].conjugate();
 
             if (l == l1 && l == l2) {
-              T[next]("a2,a2'") = T[curr]("a1,a1'") * _A[l]("s1,a1,a2") * Obs[0]("s1,s'") *
-                                  Obs[1]("s',s2") * _Ac("s2,a1',a2'");
+	      T[next]("a2,a2'") =
+		  T[curr]("a1,a1'") * _A[l]("s1,a1,a2") * Obs[0]("s1,s'") * Obs[1]("s',s2") * _Ac("s2,a1',a2'");
             } else if (l == l1 || l == l2) {
-              T[next]("a2,a2'") =
-                  T[curr]("a1,a1'") * _A[l]("s1,a1,a2") * Obs[0]("s1,s2") * _Ac("s2,a1',a2'");
+	      T[next]("a2,a2'") = T[curr]("a1,a1'") * _A[l]("s1,a1,a2") * Obs[0]("s1,s2") * _Ac("s2,a1',a2'");
             } else {
               T[next]("a2,a2'") = T[curr]("a1,a1'") * _A[l]("s1,a1,a2") * _Ac("s1,a1',a2'");
             }
@@ -195,8 +271,7 @@ namespace TNT::Network::MPS {
           int next = (l + 1) % 2;
           Tensor::Tensor<F> _Ac = _A[l].conjugate();
           if (l == l1 || l == l2) {
-            T[next]("a2,a2'") =
-                T[curr]("a1,a1'") * _A[l]("s1,a1,a2") * O("s1,s2") * _Ac("s2,a1',a2'");
+	    T[next]("a2,a2'") = T[curr]("a1,a1'") * _A[l]("s1,a1,a2") * O("s1,s2") * _Ac("s2,a1',a2'");
           } else {
             T[next]("a2,a2'") = T[curr]("a1,a1'") * _A[l]("s1,a1,a2") * _Ac("s1,a1',a2'");
           }
