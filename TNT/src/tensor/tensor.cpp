@@ -77,8 +77,7 @@ namespace TNT::Tensor {
   }
 
   template <typename F>
-  Tensor<F>::Tensor(const std::vector<UInt> &dim, const F initial)
-      : dim{dim}, stride(dim.size()), sub{} {
+  Tensor<F>::Tensor(const std::vector<UInt> &dim, const F initial) : dim{dim}, stride(dim.size()), sub{} {
 
     totalDim = Util::multiply(dim);
     stride[0] = 1;
@@ -296,6 +295,14 @@ namespace TNT::Tensor {
   }
 
   template <typename F>
+  const Tensor<F> &Tensor<F>::addTo(F *target, const F &alpha, const double &eps) const {
+    for (ULong i = 0; i < totalDim; i++)
+      target[i] += alpha * data[i];
+
+    return *this;
+  }
+
+  template <typename F>
   UInt Tensor<F>::dimension(const std::string &s) const {
     unsigned int d = 0;
     auto index = Util::split(sub, ",");
@@ -365,8 +372,7 @@ namespace TNT::Tensor {
       std::sort(subs[n].begin(), subs[n].end());
     }
     // Find SVD subscript as the intersection
-    std::set_intersection(subs[0].begin(), subs[0].end(), subs[1].begin(), subs[1].end(),
-                          std::back_inserter(svd_sub));
+    std::set_intersection(subs[0].begin(), subs[0].end(), subs[1].begin(), subs[1].end(), std::back_inserter(svd_sub));
     // Reread tensor subscripts
     for (UInt n = 0; n < 2; n++)
       subs[n] = Util::split(subscript[n], ",");
@@ -391,9 +397,9 @@ namespace TNT::Tensor {
 
     double anorm = norm2();
 
-    UInt nvecs = Algebra::tensorSVD<F>(
-        dim, links, svals.get(), svecs.get(), data.get(),
-	Algebra::Options(options.nsv, options.tolerance, anorm, Algebra::Target::largest));
+    UInt nvecs =
+	Algebra::tensorSVD<F>(dim, links, svals.get(), svecs.get(), data.get(),
+			      Algebra::Options(options.nsv, options.tolerance, anorm, Algebra::Target::largest));
 
     switch (options.norm) {
     case SVDNorm::equal:
@@ -451,8 +457,7 @@ namespace TNT::Tensor {
       // Find position of svd subscript in subs[n]
       auto iter = std::find(subs[n].begin(), subs[n].end(), svd_sub[0]);
       // insert idx=links[n].size() at position
-      links_tr[n].insert(links_tr[n].begin() + std::distance(subs[n].begin(), iter),
-                         links[n].size());
+      links_tr[n].insert(links_tr[n].begin() + std::distance(subs[n].begin(), iter), links[n].size());
     }
 
     err = Algebra::transpose(dim_tr[0], links_tr[0], lvecs.get(), svd[0].data.get());
@@ -462,9 +467,8 @@ namespace TNT::Tensor {
   }
 
   template <typename F>
-  std::tuple<Tensor<F>, Tensor<F>> Tensor<F>::SVD(std::array<std::string, 2> subscript,
-                                                  const Tensor<F> &left, const Tensor<F> &right,
-                                                  const SVDOptions &options) const {
+  std::tuple<Tensor<F>, Tensor<F>> Tensor<F>::SVD(std::array<std::string, 2> subscript, const Tensor<F> &left,
+						  const Tensor<F> &right, const SVDOptions &options) const {
 
     int err = 0;
 
@@ -479,8 +483,7 @@ namespace TNT::Tensor {
       std::sort(subs[n].begin(), subs[n].end());
     // Find SVD subscript as the intersection
     std::vector<std::string> svd_sub;
-    std::set_intersection(subs[0].begin(), subs[0].end(), subs[1].begin(), subs[1].end(),
-                          std::back_inserter(svd_sub));
+    std::set_intersection(subs[0].begin(), subs[0].end(), subs[1].begin(), subs[1].end(), std::back_inserter(svd_sub));
     // Reread tensor subscripts
     for (UInt n = 0; n < 2; n++)
       subs[n] = Util::split(subscript[n], ",");
@@ -520,8 +523,7 @@ namespace TNT::Tensor {
     }
 
     err = Algebra::transpose(left.dimension(), links_tr[0], left.data.get(), svecs.get());
-    err = Algebra::transpose(right.dimension(), links_tr[1], right.data.get(),
-                             svecs.get() + initSize * dimM);
+    err = Algebra::transpose(right.dimension(), links_tr[1], right.data.get(), svecs.get() + initSize * dimM);
 
     // Normalize initial left and right vectors
     for (UInt n = 0; n < initSize; n++) {
@@ -545,9 +547,9 @@ namespace TNT::Tensor {
     }
 
     double anorm = norm2();
-    UInt nvecs = Algebra::tensorSVD<F>(dim, links, svals.get(), svecs.get(), data.get(),
-				       Algebra::Options(options.nsv, options.tolerance, anorm,
-							initSize, Algebra::Target::largest));
+    UInt nvecs = Algebra::tensorSVD<F>(
+	dim, links, svals.get(), svecs.get(), data.get(),
+	Algebra::Options(options.nsv, options.tolerance, anorm, initSize, Algebra::Target::largest));
 
     switch (options.norm) {
     case SVDNorm::equal:
@@ -609,8 +611,7 @@ namespace TNT::Tensor {
       // Find position of svd subscript in subs[n]
       auto iter = std::find(subs[n].begin(), subs[n].end(), svd_sub[0]);
       // insert idx=links[n].size() at position
-      links_tr[n].insert(links_tr[n].begin() + std::distance(subs[n].begin(), iter),
-                         links[n].size());
+      links_tr[n].insert(links_tr[n].begin() + std::distance(subs[n].begin(), iter), links[n].size());
     }
 
     err = Algebra::transpose(dim_tr[0], links_tr[0], lvecs.get(), svd[0].data.get());
@@ -642,9 +643,9 @@ namespace TNT::Tensor {
     double anorm = norm2();
 
     /* @TODO: Handle case when nvecs != nsv */
-    int nvecs = Algebra::tensorSVD<F>(
-        dim, links, svals.get(), svecs.get(), data.get(),
-	Algebra::Options(options.nsv, options.tolerance, anorm, Algebra::Target::largest));
+    int nvecs =
+	Algebra::tensorSVD<F>(dim, links, svals.get(), svecs.get(), data.get(),
+			      Algebra::Options(options.nsv, options.tolerance, anorm, Algebra::Target::largest));
 
     return std::make_tuple(std::move(svd[0]), std::move(svd[1]));
   }
@@ -672,12 +673,10 @@ namespace TNT::Tensor {
 template class TNT::Tensor::Tensor<double>;
 template class TNT::Tensor::Tensor<std::complex<double>>;
 
-template int TNT::Tensor::writeToFile<double>(const Tensor<double> &, const std::string &,
-                                              const std::string &);
-template int TNT::Tensor::writeToFile<std::complex<double>>(const Tensor<std::complex<double>> &,
-                                                            const std::string &,
+template int TNT::Tensor::writeToFile<double>(const Tensor<double> &, const std::string &, const std::string &);
+template int TNT::Tensor::writeToFile<std::complex<double>>(const Tensor<std::complex<double>> &, const std::string &,
                                                             const std::string &);
 
 template std::ostream &TNT::Tensor::operator<<<double>(std::ostream &, const Tensor<double> &);
-template std::ostream &TNT::Tensor::
-operator<<<std::complex<double>>(std::ostream &, const Tensor<std::complex<double>> &);
+template std::ostream &TNT::Tensor::operator<<<std::complex<double>>(std::ostream &,
+								     const Tensor<std::complex<double>> &);

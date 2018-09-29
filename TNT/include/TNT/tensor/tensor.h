@@ -37,8 +37,7 @@ namespace TNT::Tensor {
   class EigenSolver;
 
   template <typename F>
-  int writeToFile(const Tensor<F> &tensor, const std::string &filename,
-                  const std::string &path = "/Tensor");
+  int writeToFile(const Tensor<F> &tensor, const std::string &filename, const std::string &path = "/Tensor");
 
   template <typename F>
   class Tensor {
@@ -123,6 +122,7 @@ namespace TNT::Tensor {
 
     Tensor<F> &readFrom(const F *source, const double &eps = Sparse::EPS);
     const Tensor<F> &writeTo(F *target, const double &eps = Sparse::EPS) const;
+    const Tensor<F> &addTo(F *target, const F &alpha = 1.0, const double &eps = Sparse::EPS) const;
 
     // Calculate M_{abc} -> M_{asc} R_{bs}, so that M_{abc}M*_{ab'c} = delta_{bb'}
     // Return R_{bs}
@@ -140,9 +140,8 @@ namespace TNT::Tensor {
     std::tuple<Tensor<F>, Tensor<F>> SVD(std::array<std::string, 2> subscript,
                                          const SVDOptions &options = SVDOptions{}) const;
 
-    std::tuple<Tensor<F>, Tensor<F>> SVD(std::array<std::string, 2> subscript,
-                                         const Tensor<F> &left, const Tensor<F> &right,
-                                         const SVDOptions &options = SVDOptions{}) const;
+    std::tuple<Tensor<F>, Tensor<F>> SVD(std::array<std::string, 2> subscript, const Tensor<F> &left,
+					 const Tensor<F> &right, const SVDOptions &options = SVDOptions{}) const;
 
     /* SVD between links[0] and links[1]
      *     auto [Bu,Bv] = B("a1,s,s',a3").SVD({{"s,a1,b","s',b,a3"}});
