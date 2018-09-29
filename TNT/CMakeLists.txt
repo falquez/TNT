@@ -10,6 +10,7 @@ add_library(TNT
     src/configuration/configuration.cpp
     src/configuration/observables.cpp
     src/configuration/parameters.cpp
+    src/extern/blas.cpp
     src/extern/lapack.cpp
     src/extern/primme.cpp
     src/network/mps/mps.cpp

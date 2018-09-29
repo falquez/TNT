@@ -20,7 +20,7 @@
 #include <memory>
 #include <optional>
 
-#include "../extern/blas.h"
+//#include "../extern/blas.h"
 #include "../util/util.h"
 #include "algebra.h"
 

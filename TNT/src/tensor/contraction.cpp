@@ -23,14 +23,14 @@
 #include <TNT/tensor/contraction.h>
 #include <TNT/tensor/tensor.h>
 
+#include "../extern/blas.h"
 #include "../util/util.h"
 
 namespace TNT::Tensor {
 
   template <typename F>
   Contraction<F>::Contraction(const Tensor<F> &t)
-      : dims{t.dim}, totalDim{t.totalDim}, strides{t.stride}, subs{t.sub}, data{t.data.get()},
-        dim_map{} {
+      : dims{t.dim}, totalDim{t.totalDim}, strides{t.stride}, subs{t.sub}, data{t.data.get()}, dim_map{} {
 
     std::vector<std::string> idx = Util::split(subs[0], ",");
 
@@ -55,6 +55,11 @@ namespace TNT::Tensor {
   }
 
   template <typename F>
+  F Contraction<F>::dotProduct() const {
+    return TNT::BLAS::dot<F>(totalDim[0], {data[0], data[1]});
+  }
+
+  template <typename F>
   std::ostream &operator<<(std::ostream &out, const Contraction<F> &T) {
     out << "Contraction: (Not Implemented)\n";
     return out;
@@ -64,7 +69,6 @@ namespace TNT::Tensor {
 template class TNT::Tensor::Contraction<double>;
 template class TNT::Tensor::Contraction<std::complex<double>>;
 
-template std::ostream &TNT::Tensor::operator<<<double>(std::ostream &out,
-                                                       const Contraction<double> &T);
-template std::ostream &TNT::Tensor::
-operator<<<std::complex<double>>(std::ostream &out, const Contraction<std::complex<double>> &T);
+template std::ostream &TNT::Tensor::operator<<<double>(std::ostream &out, const Contraction<double> &T);
+template std::ostream &TNT::Tensor::operator<<<std::complex<double>>(std::ostream &out,
+								     const Contraction<std::complex<double>> &T);
