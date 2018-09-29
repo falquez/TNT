@@ -30,12 +30,13 @@ namespace TNT::Algebra::Sparse {
     std::array<std::vector<Algebra::UInt>, 2> dim;
     std::array<std::string, 2> sub;
     std::string subM;
+    const std::vector<TNT::Tensor::Tensor<F>> &P;
+    const std::vector<TNT::Tensor::Tensor<F>> &X;
   };
 
   template <typename F>
   struct SparseTensorData2 {
-    SparseTensorData2(const Tensor::Sparse::Tensor<F> *vec,
-                      const std::array<std::vector<uint>, 3> &dim,
+    SparseTensorData2(const Tensor::Sparse::Tensor<F> *vec, const std::array<std::vector<uint>, 3> &dim,
                       const std::array<std::vector<int>, 3> &idx)
         : vec(vec), dim(dim) {
       subscript[0] = Util::stringify(idx[0]);
@@ -56,20 +57,20 @@ namespace TNT::Algebra::Sparse {
    * R index position remains same
    */
   template <typename F>
-  int tensorQRD(const std::vector<UInt> &dim, const std::array<std::vector<UInt>, 2> &idx, F *data,
-                F *R);
+  int tensorQRD(const std::vector<UInt> &dim, const std::array<std::vector<UInt>, 2> &idx, F *data, F *R);
+
+  template <typename F>
+  int tensorEigen(double *evals, F *evecs, const std::array<std::string, 2> &sub, const Tensor::Sparse::Tensor<F> *vec,
+		  const Options &options = Options{});
 
   template <typename F>
   int tensorEigen(double *evals, F *evecs, const std::array<std::string, 2> &sub,
-                  const Tensor::Sparse::Tensor<F> *vec, const Options &options = Options{});
+		  const Tensor::Sparse::Contraction<F> &seq, const std::vector<TNT::Tensor::Tensor<F>> &P = {},
+		  const std::vector<TNT::Tensor::Tensor<F>> &X = {}, const Options &options = Options{});
 
   template <typename F>
-  int tensorEigen(double *evals, F *evecs, const std::array<std::string, 2> &sub,
-                  const Tensor::Sparse::Contraction<F> &seq, const Options &options = Options{});
-
-  template <typename F>
-  int tensorSVD(const Tensor::Sparse::Tensor<F> &vec, const std::array<std::vector<UInt>, 2> &idx,
-                double *svals, F *svecs, const Options &options);
+  int tensorSVD(const Tensor::Sparse::Tensor<F> &vec, const std::array<std::vector<UInt>, 2> &idx, double *svals,
+		F *svecs, const Options &options);
 } // namespace TNT::Algebra::Sparse
 
 #endif //_TNT_SPARSE_ALGEBRA_H

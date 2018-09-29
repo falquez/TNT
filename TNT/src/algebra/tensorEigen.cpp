@@ -21,10 +21,20 @@
 #include "algebra.h"
 
 template <typename F>
-void tensorVec(void *x, PRIMME_INT *ldx, void *y, PRIMME_INT *ldy, int *blockSize,
-               primme_params *primme, int *ierr) {
+struct TensorData {
+  const TNT::Tensor::Contraction<F> &seq;
+  std::vector<unsigned int> dimX;
+  std::string subX;
+  const std::vector<TNT::Tensor::Tensor<F>> &P;
+  const std::vector<TNT::Tensor::Tensor<F>> &X;
+};
 
-  TNT::Tensor::Contraction<F> seq{*(TNT::Tensor::Contraction<F> *)primme->matrix};
+template <typename F>
+void tensorVec(void *x, PRIMME_INT *ldx, void *y, PRIMME_INT *ldy, int *blockSize, primme_params *primme, int *ierr) {
+
+  TensorData<F> *mdata = static_cast<TensorData<F> *>(primme->matrix);
+
+  TNT::Tensor::Contraction<F> seq{mdata->seq}; //{*(TNT::Tensor::Contraction<F> *)primme->matrix};
   seq.data.push_back(nullptr);
 
   *ierr = 0;
@@ -34,12 +44,44 @@ void tensorVec(void *x, PRIMME_INT *ldx, void *y, PRIMME_INT *ldy, int *blockSiz
   }
 }
 
+template <typename F>
+void tensorVecPX(void *x, PRIMME_INT *ldx, void *y, PRIMME_INT *ldy, int *blockSize, primme_params *primme, int *ierr) {
+
+  TensorData<F> *mdata = static_cast<TensorData<F> *>(primme->matrix);
+
+  TNT::Tensor::Contraction<F> seq{mdata->seq}; //{*(TNT::Tensor::Contraction<F> *)primme->matrix};
+  seq.data.push_back(nullptr);
+
+  unsigned int nprojs = mdata->P.size();
+  std::cout << "nprojs=" << nprojs << " dimX=";
+  for (const auto &d : mdata->dimX)
+    std::cout << d << ",";
+  std::cout << " subX=" << mdata->subX << std::endl;
+
+  *ierr = 0;
+  for (int i = 0; i < *blockSize; i++) {
+    seq.data.back() = (F *)x + (*ldx) * i;
+    *ierr = TNT::Algebra::tensorMult<F>((F *)y + (*ldy) * i, seq.subs.back(), seq);
+
+    for (unsigned int n = 0; n < nprojs; n++) {
+      TNT::Tensor::Tensor<F> X(mdata->dimX);
+      X.readFrom((F *)x + (*ldx) * i);
+      // std::cout << "mdata->P[" << n << "]" << mdata->P[n] << std::endl;
+      // std::cout << "X=" << X << std::endl;
+      F c = mdata->P[n](mdata->subX) * X(mdata->subX);
+      // std::cout << "n=" << n << " c=" << c << std::endl;
+      mdata->P[n].conjugate().addTo((F *)y + (*ldy) * i, c);
+    }
+  }
+}
+
 namespace TNT::Algebra {
   // const size_t alignment = 64;
 
   template <typename F>
-  int tensorEigen(double *evals, F *evecs, const std::array<std::string, 2> &sub,
-                  const Tensor::Contraction<F> &seq, const Options &options) {
+  int tensorEigen(double *evals, F *evecs, const std::array<std::string, 2> &sub, const Tensor::Contraction<F> &seq,
+		  const std::vector<TNT::Tensor::Tensor<F>> &P, const std::vector<TNT::Tensor::Tensor<F>> &X,
+		  const Options &options) {
     int err = 0;
 
     std::unique_ptr<double[]> targetShifts;
@@ -47,22 +89,27 @@ namespace TNT::Algebra {
     /* Allocate space for converged Ritz values and residual norms */
     std::unique_ptr<double[]> rnorm = std::make_unique<double[]>(options.nv);
 
-    Tensor::Contraction<F> mdata{seq};
+    Tensor::Contraction<F> nseq{seq};
 
     auto idx = Util::split(sub[0], ",");
     std::vector<UInt> dim(idx.size());
-    for (int i = 0; i < dim.size(); i++)
+    for (unsigned int i = 0; i < dim.size(); i++)
       dim[i] = seq.dim_map.at(idx[i]);
 
-    mdata.dims.push_back(dim);
-    mdata.subs.push_back(sub[0]);
-    mdata.subs.push_back(sub[1]);
+    nseq.dims.push_back(dim);
+    nseq.subs.push_back(sub[0]);
+    nseq.subs.push_back(sub[1]);
 
     primme_params primme;
     primme_initialize(&primme);
 
+    TensorData<F> mdata{nseq, dim, sub[0], P, X};
+
     primme.matrix = &mdata;
-    primme.matrixMatvec = tensorVec<F>;
+    if (P.size() > 0 || X.size() > 0)
+      primme.matrixMatvec = tensorVecPX<F>;
+    else
+      primme.matrixMatvec = tensorVec<F>;
     // primme.matrixMatvec = tensorVecSeq<F>;
     /* Set problem parameters */
     primme.n = Util::multiply(dim);
@@ -79,7 +126,7 @@ namespace TNT::Algebra {
       break;
     case Target::closest_leq:
       targetShifts = std::make_unique<double[]>(options.targets.size());
-      for (int i = 0; i < options.targets.size(); i++)
+      for (unsigned int i = 0; i < options.targets.size(); i++)
         targetShifts[i] = options.targets[i];
 
       primme.target = primme_closest_leq;
@@ -88,7 +135,7 @@ namespace TNT::Algebra {
       break;
     case Target::closest_abs:
       targetShifts = std::make_unique<double[]>(options.targets.size());
-      for (int i = 0; i < options.targets.size(); i++)
+      for (unsigned int i = 0; i < options.targets.size(); i++)
         targetShifts[i] = options.targets[i];
 
       primme.target = primme_closest_abs;
@@ -98,6 +145,7 @@ namespace TNT::Algebra {
     }
 
     /* Call primme  */
+    primme.printLevel = 4;
     err = PRIMME::calculate_ewp_primme<F>(evals, evecs, rnorm.get(), &primme);
     int converged = primme.initSize;
 
@@ -107,10 +155,13 @@ namespace TNT::Algebra {
   }
 } // namespace TNT::Algebra
 
-template int TNT::Algebra::tensorEigen<double>(double *evals, double *evecs,
-                                               const std::array<std::string, 2> &sub,
-                                               const Tensor::Contraction<double> &seq,
-                                               const Options &options);
+template int TNT::Algebra::tensorEigen<double>(double *evals, double *evecs, const std::array<std::string, 2> &sub,
+					       const Tensor::Contraction<double> &seq,
+					       const std::vector<TNT::Tensor::Tensor<double>> &P = {},
+					       const std::vector<TNT::Tensor::Tensor<double>> &X = {},
+					       const Options &options);
 template int TNT::Algebra::tensorEigen<std::complex<double>>(
     double *evals, std::complex<double> *evecs, const std::array<std::string, 2> &sub,
-    const Tensor::Contraction<std::complex<double>> &seq, const Options &options);
+    const Tensor::Contraction<std::complex<double>> &seq,
+    const std::vector<TNT::Tensor::Tensor<std::complex<double>>> &P = {},
+    const std::vector<TNT::Tensor::Tensor<std::complex<double>>> &X = {}, const Options &options);
