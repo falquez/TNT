@@ -58,18 +58,16 @@ namespace TNT::Tensor::Sparse {
 
     std::unique_ptr<F[]> buff = std::make_unique<F[]>(T.totalDim);
 
-    int err = Algebra::Sparse::tensorEigen(
-        &ev, buff.get(), sub, seq,
-	Algebra::Options(1, tolerance, 0, Algebra::Target::closest_leq, targets));
+    int err = Algebra::Sparse::tensorEigen(&ev, buff.get(), sub, seq, {}, {},
+					   Algebra::Options(1, tolerance, 0, Algebra::Target::closest_leq, targets));
 
     T.readFrom(buff.get());
 
     return std::make_tuple(ev, std::move(T));
   }
 
-  template <typename F>
-  std::tuple<F, TNT::Tensor::Tensor<F>>
-  EigenSolver<F>::optimize(const TNT::Tensor::Contraction<F> &seq1) const {
+  /*template <typename F>
+  std::tuple<F, TNT::Tensor::Tensor<F>> EigenSolver<F>::optimize(const TNT::Tensor::Contraction<F> &seq1) const {
     int err = 0;
 
     double ev;
@@ -92,18 +90,16 @@ namespace TNT::Tensor::Sparse {
       buff = std::make_unique<F[]>(T.totalDim);
     }
 
-    err = Algebra::Sparse::tensorEigen(
-        &ev, buff.get(), sub, seq,
-	Algebra::Options(1, tolerance, initSize, Algebra::Target::smallest, {}));
+    err = Algebra::Sparse::tensorEigen(&ev, buff.get(), sub, seq, {},
+				       Algebra::Options(1, tolerance, initSize, Algebra::Target::smallest, {}));
 
     T.data = std::move(buff);
 
     return std::make_tuple(ev, std::move(T));
-  }
+  }*/
 
   template <typename F>
-  std::tuple<F, TNT::Tensor::Tensor<F>>
-  EigenSolver<F>::optimize(const TNT::Tensor::Tensor<F> &t1) const {
+  std::tuple<F, TNT::Tensor::Tensor<F>> EigenSolver<F>::optimize(const TNT::Tensor::Tensor<F> &t1) const {
     int err = 0;
 
     double ev;
@@ -119,9 +115,42 @@ namespace TNT::Tensor::Sparse {
       t1.writeTo(buff.get());
     }
 
-    err = Algebra::Sparse::tensorEigen(
-        &ev, buff.get(), sub, seq,
-	Algebra::Options(1, tolerance, initSize, Algebra::Target::smallest, {}));
+    err = Algebra::Sparse::tensorEigen(&ev, buff.get(), sub, seq, {}, {},
+				       Algebra::Options(1, tolerance, initSize, Algebra::Target::smallest, {}));
+
+    T.data = std::move(buff);
+
+    return std::make_tuple(ev, std::move(T));
+  }
+
+  template <typename F>
+  std::tuple<F, TNT::Tensor::Tensor<F>> EigenSolver<F>::optimize(const TNT::Tensor::Contraction<F> &seq1,
+								 const std::vector<TNT::Tensor::Tensor<F>> &P,
+								 const std::vector<TNT::Tensor::Tensor<F>> &X) const {
+    int err = 0;
+
+    double ev;
+    std::unique_ptr<F[]> buff;
+
+    auto idx = Util::split(sub[0], ",");
+    std::vector<UInt> vec_dim(idx.size());
+    for (unsigned int i = 0; i < vec_dim.size(); i++)
+      vec_dim[i] = seq.dim_map.at(idx[i]);
+
+    TNT::Tensor::Tensor<F> T(vec_dim);
+
+    int initSize = 0;
+    if (_useInitial) {
+      initSize = 1;
+      TNT::Tensor::Tensor<F> T0;
+      T0(sub[0]) = seq1;
+      buff = std::move(T0.data); // std::make_unique<F[]>(T.totalDim);
+    } else {
+      buff = std::make_unique<F[]>(T.totalDim);
+    }
+
+    err = Algebra::Sparse::tensorEigen(&ev, buff.get(), sub, seq, P, X,
+				       Algebra::Options(1, tolerance, initSize, Algebra::Target::smallest, {}));
 
     T.data = std::move(buff);
 

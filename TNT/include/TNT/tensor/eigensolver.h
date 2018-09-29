@@ -58,8 +58,10 @@ namespace TNT::Tensor {
 
     EigenSolver<F> &operator()(const std::array<std::string, 2> &sub1);
 
-    std::tuple<F, Tensor<F>> optimize(const Tensor<F> &t1) const;
-    std::tuple<F, Tensor<F>> optimize(const Contraction<F> &seq) const;
+    std::tuple<F, Tensor<F>> optimize(const Tensor<F> &t1const, const std::vector<Tensor<F>> &P = {},
+				      const std::vector<Tensor<F>> &X = {}) const;
+    std::tuple<F, Tensor<F>> optimize(const Contraction<F> &seqconst, const std::vector<Tensor<F>> &P = {},
+				      const std::vector<Tensor<F>> &X = {}) const;
   };
 } // namespace TNT::Tensor
 

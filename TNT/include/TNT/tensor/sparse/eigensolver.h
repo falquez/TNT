@@ -37,8 +37,7 @@ namespace TNT::Tensor::Sparse {
     bool _useInitial;
 
   public:
-    EigenSolver(const Contraction<F> &seq, const double tolerance = 10E-9)
-	: seq{seq}, sub{}, tolerance{tolerance}, targets{}, _useInitial{false} {}
+    EigenSolver(const Contraction<F> &seq) : seq{seq}, sub{}, tolerance{10E-9}, targets{}, _useInitial{false} {}
 
     EigenSolver<F> &setTolerance(const double &tol) {
       tolerance = tol;
@@ -63,7 +62,9 @@ namespace TNT::Tensor::Sparse {
     std::tuple<F, Tensor<F>> optimize(const Contraction<F> &seq) const;
 
     std::tuple<F, TNT::Tensor::Tensor<F>> optimize(const TNT::Tensor::Tensor<F> &t1) const;
-    std::tuple<F, TNT::Tensor::Tensor<F>> optimize(const TNT::Tensor::Contraction<F> &seq) const;
+    std::tuple<F, TNT::Tensor::Tensor<F>> optimize(const TNT::Tensor::Contraction<F> &seq1,
+						   const std::vector<TNT::Tensor::Tensor<F>> &P = {},
+						   const std::vector<TNT::Tensor::Tensor<F>> &X = {}) const;
   };
 } // namespace TNT::Tensor::Sparse
 
