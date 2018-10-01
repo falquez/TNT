@@ -23,8 +23,8 @@
 
 namespace TNT::Tensor {
   template <typename F>
-  std::tuple<F, Tensor<F>> EigenSolver<F>::optimize(const Tensor<F> &t1, const std::vector<Tensor<F>> &P,
-						    const std::vector<Tensor<F>> &X) const {
+  std::tuple<F, Tensor<F>> EigenSolver<F>::optimize(const Tensor<F> &t1, const std::vector<Projector<F>> &P,
+                                                    const std::vector<Tensor<F>> &X) const {
     int err = 0;
 
     double ev;
@@ -46,7 +46,7 @@ namespace TNT::Tensor {
     }
 
     err = Algebra::tensorEigen(&ev, buff.get(), sub, seq, P, X,
-			       Algebra::Options(1, tolerance, initSize, Algebra::Target::smallest, {}));
+                               Algebra::Options(1, tolerance, initSize, Algebra::Target::smallest, {}));
 
     T.data = std::move(buff);
 
@@ -54,8 +54,8 @@ namespace TNT::Tensor {
   }
 
   template <typename F>
-  std::tuple<F, Tensor<F>> EigenSolver<F>::optimize(const Contraction<F> &seq1, const std::vector<Tensor<F>> &P,
-						    const std::vector<Tensor<F>> &X) const {
+  std::tuple<F, Tensor<F>> EigenSolver<F>::optimize(const Contraction<F> &seq1, const std::vector<Projector<F>> &P,
+                                                    const std::vector<Tensor<F>> &X) const {
     int err = 0;
 
     double ev;
@@ -79,7 +79,7 @@ namespace TNT::Tensor {
     }
 
     err = Algebra::tensorEigen(&ev, buff.get(), sub, seq, P, X,
-			       Algebra::Options(1, tolerance, initSize, Algebra::Target::smallest, {}));
+                               Algebra::Options(1, tolerance, initSize, Algebra::Target::smallest, {}));
 
     T.data = std::move(buff);
 

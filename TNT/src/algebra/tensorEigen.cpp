@@ -25,7 +25,7 @@ struct TensorData {
   const TNT::Tensor::Contraction<F> &seq;
   std::vector<unsigned int> dimX;
   std::string subX;
-  const std::vector<TNT::Tensor::Tensor<F>> &P;
+  const std::vector<TNT::Tensor::Projector<F>> &P;
   const std::vector<TNT::Tensor::Tensor<F>> &X;
 };
 
@@ -53,10 +53,10 @@ void tensorVecPX(void *x, PRIMME_INT *ldx, void *y, PRIMME_INT *ldy, int *blockS
   seq.data.push_back(nullptr);
 
   unsigned int nprojs = mdata->P.size();
-  std::cout << "nprojs=" << nprojs << " dimX=";
-  for (const auto &d : mdata->dimX)
-    std::cout << d << ",";
-  std::cout << " subX=" << mdata->subX << std::endl;
+  // std::cout << "nprojs=" << nprojs << " dimX=";
+  // for (const auto &d : mdata->dimX)
+  //  std::cout << d << ",";
+  // std::cout << " subX=" << mdata->subX << std::endl;
 
   *ierr = 0;
   for (int i = 0; i < *blockSize; i++) {
@@ -68,9 +68,9 @@ void tensorVecPX(void *x, PRIMME_INT *ldx, void *y, PRIMME_INT *ldy, int *blockS
       X.readFrom((F *)x + (*ldx) * i);
       // std::cout << "mdata->P[" << n << "]" << mdata->P[n] << std::endl;
       // std::cout << "X=" << X << std::endl;
-      F c = mdata->P[n](mdata->subX) * X(mdata->subX);
+      F c = std::get<1>(mdata->P[n])(mdata->subX) * X(mdata->subX);
       // std::cout << "n=" << n << " c=" << c << std::endl;
-      mdata->P[n].conjugate().addTo((F *)y + (*ldy) * i, c);
+      std::get<1>(mdata->P[n]).conjugate().addTo((F *)y + (*ldy) * i, -std::get<0>(mdata->P[n]) * c);
     }
   }
 }
@@ -80,8 +80,8 @@ namespace TNT::Algebra {
 
   template <typename F>
   int tensorEigen(double *evals, F *evecs, const std::array<std::string, 2> &sub, const Tensor::Contraction<F> &seq,
-		  const std::vector<TNT::Tensor::Tensor<F>> &P, const std::vector<TNT::Tensor::Tensor<F>> &X,
-		  const Options &options) {
+                  const std::vector<TNT::Tensor::Projector<F>> &P, const std::vector<TNT::Tensor::Tensor<F>> &X,
+                  const Options &options) {
     int err = 0;
 
     std::unique_ptr<double[]> targetShifts;
@@ -156,12 +156,12 @@ namespace TNT::Algebra {
 } // namespace TNT::Algebra
 
 template int TNT::Algebra::tensorEigen<double>(double *evals, double *evecs, const std::array<std::string, 2> &sub,
-					       const Tensor::Contraction<double> &seq,
-					       const std::vector<TNT::Tensor::Tensor<double>> &P = {},
-					       const std::vector<TNT::Tensor::Tensor<double>> &X = {},
-					       const Options &options);
+                                               const Tensor::Contraction<double> &seq,
+                                               const std::vector<TNT::Tensor::Projector<double>> &P = {},
+                                               const std::vector<TNT::Tensor::Tensor<double>> &X = {},
+                                               const Options &options);
 template int TNT::Algebra::tensorEigen<std::complex<double>>(
     double *evals, std::complex<double> *evecs, const std::array<std::string, 2> &sub,
     const Tensor::Contraction<std::complex<double>> &seq,
-    const std::vector<TNT::Tensor::Tensor<std::complex<double>>> &P = {},
+    const std::vector<TNT::Tensor::Projector<std::complex<double>>> &P = {},
     const std::vector<TNT::Tensor::Tensor<std::complex<double>>> &X = {}, const Options &options);

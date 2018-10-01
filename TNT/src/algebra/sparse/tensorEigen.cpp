@@ -24,7 +24,7 @@
 
 template <typename F>
 void SparseTensorVec(void *x, PRIMME_INT *ldx, void *y, PRIMME_INT *ldy, int *blockSize, primme_params *primme,
-		     int *ierr) {
+                     int *ierr) {
 
   TNT::Algebra::Sparse::SparseTensorData<F> *mdata =
       static_cast<TNT::Algebra::Sparse::SparseTensorData<F> *>(primme->matrix);
@@ -48,7 +48,7 @@ void SparseTensorVec(void *x, PRIMME_INT *ldx, void *y, PRIMME_INT *ldy, int *bl
 
 template <typename F>
 void SparseTensorVecPX(void *x, PRIMME_INT *ldx, void *y, PRIMME_INT *ldy, int *blockSize, primme_params *primme,
-		       int *ierr) {
+                       int *ierr) {
 
   TNT::Algebra::Sparse::SparseTensorData<F> *mdata =
       static_cast<TNT::Algebra::Sparse::SparseTensorData<F> *>(primme->matrix);
@@ -73,8 +73,8 @@ void SparseTensorVecPX(void *x, PRIMME_INT *ldx, void *y, PRIMME_INT *ldy, int *
       Xd.readFrom((F *)x + (*ldx) * i);
       // std::cout << "mdata->P[" << n << "]" << mdata->P[n] << std::endl;
       // std::cout << "Xd=" << Xd << std::endl;
-      F c = mdata->P[n](mdata->sub[0]) * Xd(mdata->sub[0]);
-      mdata->P[n].conjugate().addTo((F *)y + (*ldy) * i, c);
+      F c = std::get<1>(mdata->P[n])(mdata->sub[0]) * Xd(mdata->sub[0]);
+      std::get<1>(mdata->P[n]).conjugate().addTo((F *)y + (*ldy) * i, -std::get<0>(mdata->P[n]) * c);
     }
   }
 }
@@ -83,7 +83,7 @@ namespace TNT::Algebra::Sparse {
 
   template <typename F>
   int tensorEigen(double *evals, F *evecs, const std::array<std::string, 2> &sub, const Tensor::Sparse::Tensor<F> *vec,
-		  const Options &options) {
+                  const Options &options) {
     int err = 0;
     /* Not Implemented */
     return -1;
@@ -91,8 +91,8 @@ namespace TNT::Algebra::Sparse {
 
   template <typename F>
   int tensorEigen(double *evals, F *evecs, const std::array<std::string, 2> &sub,
-		  const Tensor::Sparse::Contraction<F> &seq, const std::vector<TNT::Tensor::Tensor<F>> &P,
-		  const std::vector<TNT::Tensor::Tensor<F>> &X, const Options &options) {
+                  const Tensor::Sparse::Contraction<F> &seq, const std::vector<TNT::Tensor::Projector<F>> &P,
+                  const std::vector<TNT::Tensor::Tensor<F>> &X, const Options &options) {
     int err = 0;
     Tensor::Sparse::Tensor<F> T;
     std::unique_ptr<double[]> targetShifts;
@@ -182,12 +182,12 @@ namespace TNT::Algebra::Sparse {
 } // namespace TNT::Algebra::Sparse
 
 template int TNT::Algebra::Sparse::tensorEigen<double>(double *, double *, const std::array<std::string, 2> &,
-						       const Tensor::Sparse::Contraction<double> &,
-						       const std::vector<TNT::Tensor::Tensor<double>> &,
-						       const std::vector<TNT::Tensor::Tensor<double>> &,
-						       const Options &);
+                                                       const Tensor::Sparse::Contraction<double> &,
+                                                       const std::vector<TNT::Tensor::Projector<double>> &,
+                                                       const std::vector<TNT::Tensor::Tensor<double>> &,
+                                                       const Options &);
 template int TNT::Algebra::Sparse::tensorEigen<std::complex<double>>(
     double *, std::complex<double> *, const std::array<std::string, 2> &,
     const Tensor::Sparse::Contraction<std::complex<double>> &,
-    const std::vector<TNT::Tensor::Tensor<std::complex<double>>> &,
+    const std::vector<TNT::Tensor::Projector<std::complex<double>>> &,
     const std::vector<TNT::Tensor::Tensor<std::complex<double>>> &, const Options &);

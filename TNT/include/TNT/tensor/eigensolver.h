@@ -37,7 +37,7 @@ namespace TNT::Tensor {
 
   public:
     EigenSolver(const Contraction<F> &seq, const double tolerance = 10E-9)
-	: seq{seq}, sub{}, tolerance{tolerance}, targets{}, _useInitial{false} {}
+        : seq{seq}, sub{}, tolerance{tolerance}, targets{}, _useInitial{false} {}
 
     EigenSolver<F> &setTolerance(const double &tol) {
       tolerance = tol;
@@ -58,10 +58,10 @@ namespace TNT::Tensor {
 
     EigenSolver<F> &operator()(const std::array<std::string, 2> &sub1);
 
-    std::tuple<F, Tensor<F>> optimize(const Tensor<F> &t1const, const std::vector<Tensor<F>> &P = {},
-				      const std::vector<Tensor<F>> &X = {}) const;
-    std::tuple<F, Tensor<F>> optimize(const Contraction<F> &seqconst, const std::vector<Tensor<F>> &P = {},
-				      const std::vector<Tensor<F>> &X = {}) const;
+    std::tuple<F, Tensor<F>> optimize(const Tensor<F> &t1const, const std::vector<Projector<F>> &P = {},
+                                      const std::vector<Tensor<F>> &X = {}) const;
+    std::tuple<F, Tensor<F>> optimize(const Contraction<F> &seqconst, const std::vector<Projector<F>> &P = {},
+                                      const std::vector<Tensor<F>> &X = {}) const;
   };
 } // namespace TNT::Tensor
 

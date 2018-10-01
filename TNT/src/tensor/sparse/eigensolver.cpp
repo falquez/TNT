@@ -59,7 +59,7 @@ namespace TNT::Tensor::Sparse {
     std::unique_ptr<F[]> buff = std::make_unique<F[]>(T.totalDim);
 
     int err = Algebra::Sparse::tensorEigen(&ev, buff.get(), sub, seq, {}, {},
-					   Algebra::Options(1, tolerance, 0, Algebra::Target::closest_leq, targets));
+                                           Algebra::Options(1, tolerance, 0, Algebra::Target::closest_leq, targets));
 
     T.readFrom(buff.get());
 
@@ -91,7 +91,7 @@ namespace TNT::Tensor::Sparse {
     }
 
     err = Algebra::Sparse::tensorEigen(&ev, buff.get(), sub, seq, {},
-				       Algebra::Options(1, tolerance, initSize, Algebra::Target::smallest, {}));
+                                       Algebra::Options(1, tolerance, initSize, Algebra::Target::smallest, {}));
 
     T.data = std::move(buff);
 
@@ -116,7 +116,7 @@ namespace TNT::Tensor::Sparse {
     }
 
     err = Algebra::Sparse::tensorEigen(&ev, buff.get(), sub, seq, {}, {},
-				       Algebra::Options(1, tolerance, initSize, Algebra::Target::smallest, {}));
+                                       Algebra::Options(1, tolerance, initSize, Algebra::Target::smallest, {}));
 
     T.data = std::move(buff);
 
@@ -125,8 +125,8 @@ namespace TNT::Tensor::Sparse {
 
   template <typename F>
   std::tuple<F, TNT::Tensor::Tensor<F>> EigenSolver<F>::optimize(const TNT::Tensor::Contraction<F> &seq1,
-								 const std::vector<TNT::Tensor::Tensor<F>> &P,
-								 const std::vector<TNT::Tensor::Tensor<F>> &X) const {
+                                                                 const std::vector<TNT::Tensor::Projector<F>> &P,
+                                                                 const std::vector<TNT::Tensor::Tensor<F>> &X) const {
     int err = 0;
 
     double ev;
@@ -150,7 +150,7 @@ namespace TNT::Tensor::Sparse {
     }
 
     err = Algebra::Sparse::tensorEigen(&ev, buff.get(), sub, seq, P, X,
-				       Algebra::Options(1, tolerance, initSize, Algebra::Target::smallest, {}));
+                                       Algebra::Options(1, tolerance, initSize, Algebra::Target::smallest, {}));
 
     T.data = std::move(buff);
 

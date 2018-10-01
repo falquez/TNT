@@ -37,6 +37,9 @@ namespace TNT::Tensor {
   class EigenSolver;
 
   template <typename F>
+  using Projector = std::tuple<F, Tensor<F>>;
+
+  template <typename F>
   int writeToFile(const Tensor<F> &tensor, const std::string &filename, const std::string &path = "/Tensor");
 
   template <typename F>
@@ -141,7 +144,7 @@ namespace TNT::Tensor {
                                          const SVDOptions &options = SVDOptions{}) const;
 
     std::tuple<Tensor<F>, Tensor<F>> SVD(std::array<std::string, 2> subscript, const Tensor<F> &left,
-					 const Tensor<F> &right, const SVDOptions &options = SVDOptions{}) const;
+                                         const Tensor<F> &right, const SVDOptions &options = SVDOptions{}) const;
 
     /* SVD between links[0] and links[1]
      *     auto [Bu,Bv] = B("a1,s,s',a3").SVD({{"s,a1,b","s',b,a3"}});

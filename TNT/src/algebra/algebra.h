@@ -26,6 +26,7 @@
 #include <TNT/tensor/contraction.h>
 #include <TNT/tensor/sparse/contraction.h>
 #include <TNT/tensor/sparse/tensor.h>
+#include <TNT/tensor/tensor.h>
 
 namespace TNT::Algebra {
   using UInt = unsigned int;
@@ -47,30 +48,30 @@ namespace TNT::Algebra {
     Options() {}
     Options(const UInt &nv) : nv{nv} {}
     Options(const UInt &nv, const double &tolerance, const double &aNorm)
-	: nv{nv}, tolerance{tolerance}, aNorm{aNorm} {}
+        : nv{nv}, tolerance{tolerance}, aNorm{aNorm} {}
 
     Options(const UInt &nv, const double &tolerance, const double &aNorm, const Target &target)
-	: nv{nv}, tolerance{tolerance}, aNorm{aNorm}, target{target} {}
+        : nv{nv}, tolerance{tolerance}, aNorm{aNorm}, target{target} {}
 
     Options(const UInt &nv, const double &tolerance, const double &aNorm, const int &initial, const Target &target)
-	: nv{nv}, tolerance{tolerance}, aNorm{aNorm}, target{target}, initial{initial} {}
+        : nv{nv}, tolerance{tolerance}, aNorm{aNorm}, target{target}, initial{initial} {}
 
     Options(const UInt &nv, const double &tolerance, const int &initial, const Target &target,
             const std::vector<double> &targets)
-	: nv{nv}, tolerance{tolerance}, initial{initial}, target{target}, targets{targets} {}
+        : nv{nv}, tolerance{tolerance}, initial{initial}, target{target}, targets{targets} {}
   };
 
   template <typename F>
   int transpose(const std::vector<UInt> &dim, const std::vector<UInt> &trs, F *source, F *target, double alpha = 1.0,
-		double beta = 0.0);
+                double beta = 0.0);
 
   template <typename F>
   int transpose(const std::vector<int> &dim, const std::vector<int> &ldA, const std::vector<int> &ldB,
-		const std::vector<int> &trs, F *A, F *B);
+                const std::vector<int> &trs, F *A, F *B);
 
   template <typename F>
   int tensorMult(const std::array<std::vector<int>, 3> &dims, const std::array<std::string, 3> &subscripts,
-		 const std::array<F *, 3> &data, const double &gamma = 0.0);
+                 const std::array<F *, 3> &data, const double &gamma = 0.0);
 
   template <typename F>
   int tensorMult(F *result, const std::string subscript, const Tensor::Contraction<F> &seq);
@@ -95,8 +96,8 @@ namespace TNT::Algebra {
 
   template <typename F>
   int tensorEigen(double *evals, F *evecs, const std::array<std::string, 2> &sub, const Tensor::Contraction<F> &seq,
-		  const std::vector<TNT::Tensor::Tensor<F>> &P = {}, const std::vector<TNT::Tensor::Tensor<F>> &X = {},
-		  const Options &options = Options{});
+                  const std::vector<TNT::Tensor::Projector<F>> &P = {},
+                  const std::vector<TNT::Tensor::Tensor<F>> &X = {}, const Options &options = Options{});
 
   /* @TODO: Document side data structure
    */
@@ -105,7 +106,7 @@ namespace TNT::Algebra {
 
   template <typename F>
   int tensorSVD(const std::vector<UInt> &dim, const std::array<std::vector<UInt>, 2> &idx, double *svals, F *svecs,
-		F *data, const Options &options);
+                F *data, const Options &options);
 
 } // namespace TNT::Algebra
 
