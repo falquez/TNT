@@ -77,7 +77,7 @@ int main(int argc, char **argv) {
       const std::string output_dir = results_dir + "/" + format(n) + "/" + format(p_i) + "/";
       // Check if already finished
       if (boost::filesystem::exists(output_dir + "result.txt"))
-	continue;
+        continue;
 
       // Create output directories
       boost::filesystem::create_directories(output_dir + network_dir);
@@ -87,7 +87,7 @@ int main(int argc, char **argv) {
       const auto [i_l, i_r, i_dir] = A[n].position(state);
 
       // Projection Operators
-      std::vector<Tensor::Tensor<NumericalType>> P(n);
+      std::vector<Tensor::Projector<NumericalType>> P(n);
 
       // Right and Left Contractions
       // 1 and L are boundary sites
@@ -98,104 +98,97 @@ int main(int argc, char **argv) {
       std::cout << "Initializing Right Contractions" << std::endl;
       RC[L] = Tensor::Tensor<NumericalType>({1, 1, 1}, 1.0);
       for (unsigned int l = L - 1; l >= i_l; l--) {
-	Tensor::Tensor DW(W[l + 1]);
-	RC[l]("b1,a1,a1'") =
-	    A[n][l + 1]("s,a1,a2") * DW("b1,b2,s,s'") * RC[l + 1]("b2,a2,a2'") * A[n][l + 1].conjugate()("s',a1',a2'");
+        Tensor::Tensor DW(W[l + 1]);
+        RC[l]("b1,a1,a1'") =
+            A[n][l + 1]("s,a1,a2") * DW("b1,b2,s,s'") * RC[l + 1]("b2,a2,a2'") * A[n][l + 1].conjugate()("s',a1',a2'");
       }
 
       // Initialize Left Contractions
       std::cout << "Initializing Left Contractions" << std::endl;
       LC[1] = Tensor::Tensor<NumericalType>({1, 1, 1}, 1.0);
       for (unsigned int l = 1; l < i_r; l++) {
-	Tensor::Tensor DW(W[l]);
-	LC[l + 1]("b2,a2,a2'") =
-	    A[n][l]("s,a1,a2") * DW("b1,b2,s,s'") * LC[l]("b1,a1,a1'") * A[n][l].conjugate()("s',a1',a2'");
+        Tensor::Tensor DW(W[l]);
+        LC[l + 1]("b2,a2,a2'") =
+            A[n][l]("s,a1,a2") * DW("b1,b2,s,s'") * LC[l]("b1,a1,a1'") * A[n][l].conjugate()("s',a1',a2'");
       }
 
       // Start sweep loop
       for (const auto [l, r, dir] : A[n].sweep(state)) {
-	auto LW = LC[l].sparse();
-	auto RW = RC[r].sparse();
+        auto LW = LC[l].sparse();
+        auto RW = RC[r].sparse();
 
-	// Define Eigensolver for Operator LW*W*W*RW
-	Tensor::Sparse::EigenSolver ES(LW("b1,a1,a1'") * W[l]("b1,b2,s1,s1'") * W[r]("b2,b3,s3,s3'") * RW("b3,a2,a2'"));
+        // Define Eigensolver for Operator LW*W*W*RW
+        Tensor::Sparse::EigenSolver ES(LW("b1,a1,a1'") * W[l]("b1,b2,s1,s1'") * W[r]("b2,b3,s3,s3'") * RW("b3,a2,a2'"));
 
-	// Calculate Projection Operators
-	for (unsigned int n_i = 0; n_i < n; n_i++) {
-	  // auto test1 = A[n_i](A[n_i]);
-	  // auto test2 = A[n](A[n]);
-	  // std::cout << "A1=" << test1 << " A2=" << test2 << std::endl;
-	  Tensor::Tensor<NumericalType> Proj;
-	  Proj = A[n_i](A[n], {l, r});
-	  // std::cout << "sqrt(abs(E[" << n_i << "]))=" << std::sqrt(std::abs(E[n_i]));
-	  P[n_i] = Proj * std::sqrt(std::abs(E[n_i]));
-	  // std::cout << "P[" << n_i << "]=" << P[n_i] << std::endl;
-	}
-	// Optimize A[n][l]*A[n][l+1]
-	std::cout << "INFO: Optimize A[n][" << l << "]*A[n][" << r << "]"
-		  << ", tol=" << config.tolerance("eigenvalue") << std::endl;
-	auto [ew, T] = ES({{"s1,s3,a1,a2", "s1',s3',a1',a2'"}})
-			   .useInitial()
-			   .setTolerance(config.tolerance("eigenvalue"))
-			   .optimize(A[n][l]("s1,a1,a") * A[n][r]("s3,a,a2"), P);
+        // Calculate Projection Operators
+        for (unsigned int n_i = 0; n_i < n; n_i++)
+          P[n_i] = {E[n_i], A[n_i](A[n], {l, r})};
 
-	// @TODO: read max bond dimension from predefined vector, not current dim
-	auto nsv = A[n][l]("s1,a1,a").dimension("a");
+        // Optimize A[n][l]*A[n][l+1]
+        std::cout << "INFO: Optimize A[n][" << l << "]*A[n][" << r << "]"
+                  << ", tol=" << config.tolerance("eigenvalue") << std::endl;
+        auto [ew, T] = ES({{"s1,s3,a1,a2", "s1',s3',a1',a2'"}})
+                           .useInitial()
+                           .setTolerance(config.tolerance("eigenvalue"))
+                           .optimize(A[n][l]("s1,a1,a") * A[n][r]("s3,a,a2"), P);
 
-	auto norm = dir == Network::MPS::Sweep::Direction::Right ? Tensor::SVDNorm::left : Tensor::SVDNorm::right;
-	auto DW = dir == Network::MPS::Sweep::Direction::Right ? Tensor::Tensor(W[l]) : Tensor::Tensor(W[r]);
+        // @TODO: read max bond dimension from predefined vector, not current dim
+        auto nsv = A[n][l]("s1,a1,a").dimension("a");
 
-	// Perform SVD on T and reassign to A[l], A[r]
-	std::cout << "INFO: Decompose T into A[" << l << "]*A[" << r << "]"
-		  << " nsv=" << nsv << ", tol=" << config.tolerance("svd") << std::endl;
-	std::tie(A[n][l], A[n][r]) =
-	    T("s1,s3,a1,a2").SVD({{"s1,a1,a3", "s3,a3,a2"}}, {norm, nsv, config.tolerance("svd")});
+        auto norm = dir == Network::MPS::Sweep::Direction::Right ? Tensor::SVDNorm::left : Tensor::SVDNorm::right;
+        auto DW = dir == Network::MPS::Sweep::Direction::Right ? Tensor::Tensor(W[l]) : Tensor::Tensor(W[r]);
 
-	E[n] = ew;
-	state.eigenvalue = ew;
-	state.variance = (A[n](W2) - ew * ew) / (L * params.at("VAR"));
+        // Perform SVD on T and reassign to A[l], A[r]
+        std::cout << "INFO: Decompose T into A[" << l << "]*A[" << r << "]"
+                  << " nsv=" << nsv << ", tol=" << config.tolerance("svd") << std::endl;
+        std::tie(A[n][l], A[n][r]) =
+            T("s1,s3,a1,a2").SVD({{"s1,a1,a3", "s3,a3,a2"}}, {norm, nsv, config.tolerance("svd")});
 
-	std::cout << " n=" << n << " ip=" << p_i << " swp=" << state.iteration / L;
-	std::cout << " i=" << state.iteration << ", l=" << l << ", r=" << r << ", ";
-	std::cout.precision(8);
-	for (const auto &[name, v] : params)
-	  std::cout << name << "=" << v << ", ";
-	std::cout << "ev=" << state.eigenvalue << ", var=" << state.variance;
-	std::cout.precision(std::numeric_limits<double>::max_digits10);
-	std::cout << ", w=" << state.eigenvalue / (2 * L * params.at("x"));
-	std::cout << ", d=" << (E[n] - E[0]) / (2 * std::sqrt(params.at("x")));
-	std::cout << std::endl;
+        E[n] = ew;
+        state.eigenvalue = ew;
+        state.variance = (A[n](W2) - ew * ew) / (L * params.at("VAR"));
 
-	// Store solutions to disk
-	Tensor::writeToFile(A[n][l], output_dir + network_dir + "/" + format(l), "/Tensor");
-	Tensor::writeToFile(A[n][r], output_dir + network_dir + "/" + format(r), "/Tensor");
+        std::cout << " n=" << n << " ip=" << p_i << " swp=" << state.iteration / L;
+        std::cout << " i=" << state.iteration << ", l=" << l << ", r=" << r << ", ";
+        std::cout.precision(8);
+        for (const auto &[name, v] : params)
+          std::cout << name << "=" << v << ", ";
+        std::cout << "ev=" << state.eigenvalue << ", var=" << state.variance;
+        std::cout.precision(std::numeric_limits<double>::max_digits10);
+        std::cout << ", w=" << state.eigenvalue / (2 * L * params.at("x"));
+        std::cout << ", d=" << (E[n] - E[0]) / (2 * std::sqrt(params.at("x")));
+        std::cout << std::endl;
 
-	// Update left contraction for next iteration
-	switch (dir) {
-	case Network::MPS::Sweep::Direction::Right:
-	  LC[r]("b2,a2,a2'") =
-	      A[n][l]("s,a1,a2") * DW("b1,b2,s,s'") * LC[l]("b1,a1,a1'") * A[n][l].conjugate()("s',a1',a2'");
-	  break;
-	case Network::MPS::Sweep::Direction::Left:
-	  RC[l]("b1,a1,a1'") =
-	      A[n][r]("s,a1,a2") * DW("b1,b2,s,s'") * RC[r]("b2,a2,a2'") * A[n][r].conjugate()("s',a1',a2'");
-	  break;
-	}
+        // Store solutions to disk
+        Tensor::writeToFile(A[n][l], output_dir + network_dir + "/" + format(l), "/Tensor");
+        Tensor::writeToFile(A[n][r], output_dir + network_dir + "/" + format(r), "/Tensor");
+
+        // Update left contraction for next iteration
+        switch (dir) {
+        case Network::MPS::Sweep::Direction::Right:
+          LC[r]("b2,a2,a2'") =
+              A[n][l]("s,a1,a2") * DW("b1,b2,s,s'") * LC[l]("b1,a1,a1'") * A[n][l].conjugate()("s',a1',a2'");
+          break;
+        case Network::MPS::Sweep::Direction::Left:
+          RC[l]("b1,a1,a1'") =
+              A[n][r]("s,a1,a2") * DW("b1,b2,s,s'") * RC[r]("b2,a2,a2'") * A[n][r].conjugate()("s',a1',a2'");
+          break;
+        }
       }
 
       // Write observables to text file
       for (const auto &[i_o, obs] : observables.iterate()) {
-	std::ofstream ofile(output_dir + obs.name() + ".txt");
-	auto result = A[n](obs);
-	for (const auto &r : result) {
-	  for (const auto &s : r.site)
-	    ofile << s << " ";
-	  ofile.precision(std::numeric_limits<double>::max_digits10);
-	  for (const auto &[name, v] : params)
-	    ofile << v << " ";
-	  ofile << r.value << std::endl;
-	}
-	ofile << std::endl;
+        std::ofstream ofile(output_dir + obs.name() + ".txt");
+        auto result = A[n](obs);
+        for (const auto &r : result) {
+          for (const auto &s : r.site)
+            ofile << s << " ";
+          ofile.precision(std::numeric_limits<double>::max_digits10);
+          for (const auto &[name, v] : params)
+            ofile << v << " ";
+          ofile << r.value << std::endl;
+        }
+        ofile << std::endl;
       }
 
       // Write reuslts to text file
@@ -204,7 +197,7 @@ int main(int argc, char **argv) {
       ofile << config.network.dimB << " " << L << " ";
       ofile.precision(std::numeric_limits<double>::max_digits10);
       for (const auto &[name, v] : params)
-	ofile << v << " ";
+        ofile << v << " ";
       ofile << state.eigenvalue << " " << state.variance << std::endl;
     }
   }
