@@ -65,9 +65,9 @@ namespace TNT::Algebra {
   int transpose(const std::vector<UInt> &dim, const std::vector<UInt> &trs, F *source, F *target, double alpha = 1.0,
                 double beta = 0.0);
 
-  template <typename F>
+  /*template <typename F>
   int transpose(const std::vector<int> &dim, const std::vector<int> &ldA, const std::vector<int> &ldB,
-                const std::vector<int> &trs, F *A, F *B);
+                const std::vector<int> &trs, F *A, F *B);*/
 
   template <typename F>
   int tensorMult(const std::array<std::vector<int>, 3> &dims, const std::array<std::string, 3> &subscripts,
