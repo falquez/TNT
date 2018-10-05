@@ -172,7 +172,7 @@ int main(int argc, char **argv) {
 
       // Write observables to text file
       for (const auto &[i_o, obs] : observables.iterate()) {
-        std::ofstream ofile(output_dir + obs.name() + ".txt");
+        std::ofstream ofile(output_dir + obs.name + ".txt");
         auto result = A[n](obs);
         for (const auto &r : result) {
           for (const auto &s : r.site)

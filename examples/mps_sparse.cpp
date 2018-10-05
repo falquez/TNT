@@ -95,7 +95,7 @@ int main(int argc, char **argv) {
       std::vector<Tensor::Tensor<NumericalType>> RC(L + 1);
 
       // Initialize Right Contractions
-      std::cout << "Initializing Right Contractions" << std::endl;
+      // std::cout << "Initializing Right Contractions" << std::endl;
       RC[L] = Tensor::Tensor<NumericalType>({1, 1, 1}, 1.0);
       for (unsigned int l = L - 1; l >= i_l; l--) {
         Tensor::Tensor DW(W[l + 1]);
@@ -104,7 +104,7 @@ int main(int argc, char **argv) {
       }
 
       // Initialize Left Contractions
-      std::cout << "Initializing Left Contractions" << std::endl;
+      // std::cout << "Initializing Left Contractions" << std::endl;
       LC[1] = Tensor::Tensor<NumericalType>({1, 1, 1}, 1.0);
       for (unsigned int l = 1; l < i_r; l++) {
         Tensor::Tensor DW(W[l]);
@@ -144,9 +144,10 @@ int main(int argc, char **argv) {
         std::tie(A[n][l], A[n][r]) =
             T("s1,s3,a1,a2").SVD({{"s1,a1,a3", "s3,a3,a2"}}, {norm, nsv, config.tolerance("svd")});
 
+        double E2 = A[n](W2);
         E[n] = ew;
         state.eigenvalue = ew;
-        state.variance = (A[n](W2) - ew * ew) / (L * params.at("VAR"));
+        state.variance = (A[n](W2) - ew * ew) / (L * L);
 
         std::cout << " n=" << n << " ip=" << p_i << " swp=" << state.iteration / L;
         std::cout << " i=" << state.iteration << ", l=" << l << ", r=" << r << ", ";
@@ -156,7 +157,8 @@ int main(int argc, char **argv) {
         std::cout << "ev=" << state.eigenvalue << ", var=" << state.variance;
         std::cout.precision(std::numeric_limits<double>::max_digits10);
         std::cout << ", w=" << state.eigenvalue / (2 * L * params.at("x"));
-        std::cout << ", d=" << (E[n] - E[0]) / (2 * std::sqrt(params.at("x")));
+        std::cout << ", E2=" << E2 - ew * ew;
+        // std::cout << ", d=" << (E[n] - E[0]) / (2 * std::sqrt(params.at("x")));
         std::cout << std::endl;
 
         // Store solutions to disk
@@ -178,7 +180,9 @@ int main(int argc, char **argv) {
 
       // Write observables to text file
       for (const auto &[i_o, obs] : observables.iterate()) {
-        std::ofstream ofile(output_dir + obs.name() + ".txt");
+        std::string fname = output_dir + obs.name + ".txt";
+        std::cout << "Writing " << fname << std::endl;
+        std::ofstream ofile(fname);
         auto result = A[n](obs);
         for (const auto &r : result) {
           for (const auto &s : r.site)
@@ -186,6 +190,7 @@ int main(int argc, char **argv) {
           ofile.precision(std::numeric_limits<double>::max_digits10);
           for (const auto &[name, v] : params)
             ofile << v << " ";
+          ofile << state.eigenvalue << " " << state.variance << " ";
           ofile << r.value << std::endl;
         }
         ofile << std::endl;

@@ -86,8 +86,8 @@ int main(int argc, char **argv) {
     RC[L] = Tensor::Tensor<NumericalType>({1, 1, 1}, 1.0);
     for (unsigned int l = L - 1; l >= i_l; l--) {
       Tensor::Tensor DW(W[l + 1]);
-      RC[l]("b1,a1,a1'") = A[l + 1]("s,a1,a2") * DW("b1,b2,s,s'") * RC[l + 1]("b2,a2,a2'") *
-                           A[l + 1].conjugate()("s',a1',a2'");
+      RC[l]("b1,a1,a1'") =
+          A[l + 1]("s,a1,a2") * DW("b1,b2,s,s'") * RC[l + 1]("b2,a2,a2'") * A[l + 1].conjugate()("s',a1',a2'");
     }
 
     // Initialize Left Contractions
@@ -95,8 +95,7 @@ int main(int argc, char **argv) {
     LC[1] = Tensor::Tensor<NumericalType>({1, 1, 1}, 1.0);
     for (unsigned int l = 1; l < i_r; l++) {
       Tensor::Tensor DW(W[l]);
-      LC[l + 1]("b2,a2,a2'") =
-          A[l]("s,a1,a2") * DW("b1,b2,s,s'") * LC[l]("b1,a1,a1'") * A[l].conjugate()("s',a1',a2'");
+      LC[l + 1]("b2,a2,a2'") = A[l]("s,a1,a2") * DW("b1,b2,s,s'") * LC[l]("b1,a1,a1'") * A[l].conjugate()("s',a1',a2'");
     }
 
     // Start sweep loop
@@ -119,10 +118,8 @@ int main(int argc, char **argv) {
                                 .setTolerance(config.tolerance("eigenvalue"))
                                 .optimize(A[s1]("s3,a,a2"));
 
-      auto norm = dir == Network::MPS::Sweep::Direction::Right ? Tensor::SVDNorm::left
-                                                               : Tensor::SVDNorm::right;
-      auto DW = dir == Network::MPS::Sweep::Direction::Right ? Tensor::Tensor(W[l])
-                                                             : Tensor::Tensor(W[r]);
+      auto norm = dir == Network::MPS::Sweep::Direction::Right ? Tensor::SVDNorm::left : Tensor::SVDNorm::right;
+      auto DW = dir == Network::MPS::Sweep::Direction::Right ? Tensor::Tensor(W[l]) : Tensor::Tensor(W[r]);
       std::string idxq = dir == Network::MPS::Sweep::Direction::Right ? "a2" : "a1";
       std::string subA = dir == Network::MPS::Sweep::Direction::Right ? "s1,a3,a1" : "s1,a1,a3";
       std::string subB = dir == Network::MPS::Sweep::Direction::Right ? "s1,a2,a1" : "s1,a1,a2";
@@ -152,18 +149,16 @@ int main(int argc, char **argv) {
       // Update left contraction for next iteration
       switch (dir) {
       case Network::MPS::Sweep::Direction::Right:
-        LC[r]("b2,a2,a2'") = A[l]("s,a1,a2") * DW("b1,b2,s,s'") * LC[l]("b1,a1,a1'") *
-                             A[l].conjugate()("s',a1',a2'");
+        LC[r]("b2,a2,a2'") = A[l]("s,a1,a2") * DW("b1,b2,s,s'") * LC[l]("b1,a1,a1'") * A[l].conjugate()("s',a1',a2'");
         break;
       case Network::MPS::Sweep::Direction::Left:
-        RC[l]("b1,a1,a1'") = A[r]("s,a1,a2") * DW("b1,b2,s,s'") * RC[r]("b2,a2,a2'") *
-                             A[r].conjugate()("s',a1',a2'");
+        RC[l]("b1,a1,a1'") = A[r]("s,a1,a2") * DW("b1,b2,s,s'") * RC[r]("b2,a2,a2'") * A[r].conjugate()("s',a1',a2'");
         break;
       }
     }
 
     for (const auto &[i_o, obs] : observables.iterate()) {
-      std::ofstream ofile(param_dir + "/" + obs.name() + ".txt");
+      std::ofstream ofile(param_dir + "/" + obs.name + ".txt");
       auto result = A(obs);
       for (const auto &r : result) {
         for (const auto &s : r.site)
