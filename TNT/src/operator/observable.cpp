@@ -21,10 +21,8 @@
 namespace TNT::Operator {
 
   template <typename F>
-  Observable<F>::Observable(const std::string &name, const ObservableType &kind,
-                            const Configuration::Operator<F> &op)
-      : kind{kind} {
-    _name = name;
+  Observable<F>::Observable(const std::string &name, const ObservableType &kind, const Configuration::Operator<F> &op)
+      : _kind{kind}, name{name} {
     if (!op.rows.empty()) {
       _length = 1;
       _dimH = op.rows.size();

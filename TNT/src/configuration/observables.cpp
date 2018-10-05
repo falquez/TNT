@@ -26,8 +26,7 @@
 namespace TNT::Configuration {
 
   template <typename F>
-  Observables<F>::Observables(const std::string &config_file,
-                              const std::map<std::string, Operator<F>> &operators)
+  Observables<F>::Observables(const std::string &config_file, const std::map<std::string, Operator<F>> &operators)
       : config_file{config_file} {
     nlohmann::json j;
     std::ifstream f(config_file);
@@ -39,15 +38,18 @@ namespace TNT::Configuration {
     for (const auto &[name, obs] : obs_object) {
       std::string kind = obs["type"];
       TNT::Operator::ObservableType _type;
-
-      if (kind == "site")
-        _type = TNT::Operator::ObservableType::Site;
-      if (kind == "correlation")
-        _type = TNT::Operator::ObservableType::Correlation;
-
       if (obs.find("operator") != obs.end()) {
+        if (kind == "site")
+          _type = TNT::Operator::ObservableType::Site;
+        if (kind == "correlation")
+          _type = TNT::Operator::ObservableType::Correlation;
         std::string op_name = obs["operator"];
         O.push_back(TNT::Operator::Observable<F>(name, _type, operators.at(op_name)));
+      }
+      if (kind == "shift") {
+        _type = TNT::Operator::ObservableType::Shift;
+        O.push_back(TNT::Operator::Observable<F>(name, _type));
+        O.back().shift = obs["value"];
       }
     }
   }

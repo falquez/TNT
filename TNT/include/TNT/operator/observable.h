@@ -26,23 +26,26 @@
 
 namespace TNT::Operator {
   using UInt = unsigned int;
-  enum class ObservableType { Site, Correlation };
+  enum class ObservableType { Site, Correlation, Shift };
+
   template <typename F>
   class Observable {
-    ObservableType kind;
+    ObservableType _kind;
     UInt _dimH;
     UInt _length;
-    std::string _name;
+
     std::vector<Tensor::Tensor<F>> O;
 
   public:
     Observable(){};
-    Observable(const std::string &name, const ObservableType &kind,
-               const Configuration::Operator<F> &op);
+    Observable(const std::string &name, const ObservableType &kind) : _kind{kind}, name{name} {}
+    Observable(const std::string &name, const ObservableType &kind, const Configuration::Operator<F> &op);
     const Tensor::Tensor<F> &operator[](unsigned int site) const;
 
-    ObservableType type() const { return kind; }
-    std::string name() const { return _name; }
+    ObservableType kind() const { return _kind; }
+
+    std::string name;
+    UInt shift;
   };
 } // namespace TNT::Operator
 

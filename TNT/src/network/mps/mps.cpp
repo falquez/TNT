@@ -147,8 +147,8 @@ namespace TNT::Network::MPS {
     for (unsigned int l = 0; l < length; l++) {
       unsigned int curr = l % 2;
       unsigned int next = (l + 1) % 2;
-      Tensor::Tensor<F> _Ac = _A[l].conjugate();
-      T[next]("a2,a2'") = T[curr]("a1,a1'") * B._A[l]("s1,a1,a2") * _Ac("s1,a1',a2'");
+      // Tensor::Tensor<F> _Ac = _A[l].conjugate();
+      T[next]("a2,a2'") = T[curr]("a1,a1'") * B._A[l]("s1,a1,a2") * _A[l].conjugate()("s1,a1',a2'");
     }
 
     F result = T[length % 2][0];
@@ -205,7 +205,7 @@ namespace TNT::Network::MPS {
       // std::cout << "_Ac1[" << ml[0] << "]" << _Ac1("s1,a1',a") << std::endl;
       // std::cout << "_Ac2[" << ml[1] << "]" << _Ac2("s2,a,a2'") << std::endl;
       P("s1,s2,a1,a2") =
-	  L[ml[0] % 2]("a1,a1'") * _Ac1("s1,a1',a") * _Ac2("s2,a,a2'") * R[(length - ml[1]) % 2]("a2,a2'");
+          L[ml[0] % 2]("a1,a1'") * _Ac1("s1,a1',a") * _Ac2("s2,a,a2'") * R[(length - ml[1]) % 2]("a2,a2'");
       // std::cout << "P(\"s1,s2,a1,a2\")" << P("s1,s2,a1,a2") << std::endl;
       break;
     default:
@@ -220,7 +220,7 @@ namespace TNT::Network::MPS {
   std::vector<Measurement<F>> MPS<F>::operator()(const Operator::Observable<F> &O) const {
     std::vector<Measurement<F>> result;
 
-    switch (O.type()) {
+    switch (O.kind()) {
     case Operator::ObservableType::Site:
       break;
     case Operator::ObservableType::Correlation:
@@ -234,15 +234,15 @@ namespace TNT::Network::MPS {
           T[0] = Tensor::Tensor<F>({1, 1}, 1.0);
 
           for (unsigned int l = 0; l < length; l++) {
-            int curr = l % 2;
-            int next = (l + 1) % 2;
+            unsigned int curr = l % 2;
+            unsigned int next = (l + 1) % 2;
             Tensor::Tensor<F> _Ac = _A[l].conjugate();
 
             if (l == l1 && l == l2) {
-	      T[next]("a2,a2'") =
-		  T[curr]("a1,a1'") * _A[l]("s1,a1,a2") * Obs[0]("s1,s'") * Obs[1]("s',s2") * _Ac("s2,a1',a2'");
+              T[next]("a2,a2'") =
+                  T[curr]("a1,a1'") * _A[l]("s1,a1,a2") * Obs[0]("s1,s'") * Obs[1]("s',s2") * _Ac("s2,a1',a2'");
             } else if (l == l1 || l == l2) {
-	      T[next]("a2,a2'") = T[curr]("a1,a1'") * _A[l]("s1,a1,a2") * Obs[0]("s1,s2") * _Ac("s2,a1',a2'");
+              T[next]("a2,a2'") = T[curr]("a1,a1'") * _A[l]("s1,a1,a2") * Obs[0]("s1,s2") * _Ac("s2,a1',a2'");
             } else {
               T[next]("a2,a2'") = T[curr]("a1,a1'") * _A[l]("s1,a1,a2") * _Ac("s1,a1',a2'");
             }
@@ -251,13 +251,29 @@ namespace TNT::Network::MPS {
         }
       }
       break;
+    case Operator::ObservableType::Shift: {
+      unsigned int s = O.shift;
+      Tensor::Tensor<F> R;
+      std::array<Tensor::Tensor<F>, 2> T;
+
+      T[1]("a1,a1',a2,a2'") = _A[0]("s,a1,a2") * _A[s].conjugate()("s,a1',a2'");
+      for (unsigned int l = 1; l < length; l++) {
+        unsigned int curr = l % 2;
+        unsigned int next = (l + 1) % 2;
+        T[next]("a1,a1',a3,a3'") =
+            T[curr]("a1,a1',a2,a2'") * _A[l]("s,a2,a3") * _A[(l + s) % length].conjugate()("s,a2',a3'");
+      }
+      R = T[length % 2]("a1,a1',a2,a2'").trace("a1',a2'");
+      // R("") = T[0]("a1,a1',a2,a2'") * T[1]("a1,a1',a3,a3'");
+      result.push_back({std::vector<ULong>{s}, R[0]});
+    } break;
     default:
       break;
     }
     return result;
   }
 
-  template <typename F>
+  /*template <typename F>
   std::map<std::array<ULong, 2>, F> MPS<F>::correlation(const Tensor::Tensor<F> &O) const {
     std::map<std::array<ULong, 2>, F> res;
     for (unsigned int l1 = 0; l1 < length; l1++) {
@@ -271,7 +287,7 @@ namespace TNT::Network::MPS {
           int next = (l + 1) % 2;
           Tensor::Tensor<F> _Ac = _A[l].conjugate();
           if (l == l1 || l == l2) {
-	    T[next]("a2,a2'") = T[curr]("a1,a1'") * _A[l]("s1,a1,a2") * O("s1,s2") * _Ac("s2,a1',a2'");
+            T[next]("a2,a2'") = T[curr]("a1,a1'") * _A[l]("s1,a1,a2") * O("s1,s2") * _Ac("s2,a1',a2'");
           } else {
             T[next]("a2,a2'") = T[curr]("a1,a1'") * _A[l]("s1,a1,a2") * _Ac("s1,a1',a2'");
           }
@@ -281,7 +297,7 @@ namespace TNT::Network::MPS {
     }
 
     return res;
-  }
+  }*/
 
   template <typename F>
   std::tuple<ULong, ULong, Sweep::Direction> MPS<F>::position(const State &state) const {

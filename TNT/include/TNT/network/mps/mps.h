@@ -72,7 +72,7 @@ namespace TNT::Network::MPS {
     F operator()(const Operator::Sparse::MPO<F> &mpo) const;
 
     std::vector<Measurement<F>> operator()(const Operator::Observable<F> &O) const;
-    std::map<std::array<ULong, 2>, F> correlation(const Tensor::Tensor<F> &O) const;
+    // std::map<std::array<ULong, 2>, F> correlation(const Tensor::Tensor<F> &O) const;
 
     Iterator sweep(State &state);
 
