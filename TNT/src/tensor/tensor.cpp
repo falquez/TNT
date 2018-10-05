@@ -149,6 +149,51 @@ namespace TNT::Tensor {
   }
 
   template <typename F>
+  Tensor<F> &Tensor<F>::split(const std::string &spl) {
+    throw std::invalid_argument("Not Implemented");
+
+    return *this;
+  }
+
+  template <typename F>
+  Tensor<F> Tensor<F>::trace(const std::string &tr) const {
+
+    std::unique_ptr<F[]> tr_data = std::make_unique<F[]>(totalDim);
+    std::vector<std::string> idx_s = Util::split(sub, ",");
+    std::vector<std::string> tr_sub = Util::split(tr, ",");
+    std::map<std::string, UInt> idx_map;
+    for (UInt i = 0; i < idx_s.size(); i++)
+      idx_map.emplace(idx_s[i], i);
+    std::array<UInt, 2> tr_idx = {idx_map.at(tr_sub[0]), idx_map.at(tr_sub[1])};
+
+    // assert(tr_sub.size() == 2);
+
+    assert(idx_s.size() == dim.size() && dim[tr_idx[0]] == dim[tr_idx[1]]);
+    std::vector<UInt> trsp, ndim;
+    trsp.push_back(tr_idx[0]);
+    trsp.push_back(tr_idx[1]);
+    for (UInt i = 0; i < dim.size(); i++)
+      if (i != tr_idx[0] && i != tr_idx[1]) {
+        trsp.push_back(i);
+        ndim.push_back(dim[i]);
+      }
+
+    int err = Algebra::transpose(dim, trsp, data.get(), tr_data.get());
+
+    Tensor<F> T(ndim);
+
+    // Sum over trace and copy to T
+    UInt tr_dim = dim[tr_idx[0]];
+    for (UInt i = 0; i < T.totalDim; i++) {
+      for (UInt j = 0; j < tr_dim; j++) {
+        T.data[i] += tr_data[i * tr_dim * tr_dim + j * tr_dim + j];
+      }
+    }
+
+    return std::move(T);
+  }
+
+  template <typename F>
   Tensor<F>::Tensor(const Sparse::Tensor<F> &t) : dim{t.dimension()}, stride(dim.size()), sub{} {
 
     totalDim = Util::multiply(dim);
@@ -398,8 +443,8 @@ namespace TNT::Tensor {
     double anorm = norm2();
 
     UInt nvecs =
-	Algebra::tensorSVD<F>(dim, links, svals.get(), svecs.get(), data.get(),
-			      Algebra::Options(options.nsv, options.tolerance, anorm, Algebra::Target::largest));
+        Algebra::tensorSVD<F>(dim, links, svals.get(), svecs.get(), data.get(),
+                              Algebra::Options(options.nsv, options.tolerance, anorm, Algebra::Target::largest));
 
     switch (options.norm) {
     case SVDNorm::equal:
@@ -468,7 +513,7 @@ namespace TNT::Tensor {
 
   template <typename F>
   std::tuple<Tensor<F>, Tensor<F>> Tensor<F>::SVD(std::array<std::string, 2> subscript, const Tensor<F> &left,
-						  const Tensor<F> &right, const SVDOptions &options) const {
+                                                  const Tensor<F> &right, const SVDOptions &options) const {
 
     int err = 0;
 
@@ -548,8 +593,8 @@ namespace TNT::Tensor {
 
     double anorm = norm2();
     UInt nvecs = Algebra::tensorSVD<F>(
-	dim, links, svals.get(), svecs.get(), data.get(),
-	Algebra::Options(options.nsv, options.tolerance, anorm, initSize, Algebra::Target::largest));
+        dim, links, svals.get(), svecs.get(), data.get(),
+        Algebra::Options(options.nsv, options.tolerance, anorm, initSize, Algebra::Target::largest));
 
     switch (options.norm) {
     case SVDNorm::equal:
@@ -644,8 +689,8 @@ namespace TNT::Tensor {
 
     /* @TODO: Handle case when nvecs != nsv */
     int nvecs =
-	Algebra::tensorSVD<F>(dim, links, svals.get(), svecs.get(), data.get(),
-			      Algebra::Options(options.nsv, options.tolerance, anorm, Algebra::Target::largest));
+        Algebra::tensorSVD<F>(dim, links, svals.get(), svecs.get(), data.get(),
+                              Algebra::Options(options.nsv, options.tolerance, anorm, Algebra::Target::largest));
 
     return std::make_tuple(std::move(svd[0]), std::move(svd[1]));
   }
@@ -679,4 +724,4 @@ template int TNT::Tensor::writeToFile<std::complex<double>>(const Tensor<std::co
 
 template std::ostream &TNT::Tensor::operator<<<double>(std::ostream &, const Tensor<double> &);
 template std::ostream &TNT::Tensor::operator<<<std::complex<double>>(std::ostream &,
-								     const Tensor<std::complex<double>> &);
+                                                                     const Tensor<std::complex<double>> &);

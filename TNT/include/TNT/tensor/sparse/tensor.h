@@ -89,8 +89,7 @@ namespace TNT::Tensor::Sparse {
   std::ostream &operator<<(std::ostream &out, const Tensor<F> &T);
 
   template <typename F>
-  int writeToFile(const Tensor<F> &tensor, const std::string &filename,
-                  const std::string &path = "/Tensor/Sparse");
+  int writeToFile(const Tensor<F> &tensor, const std::string &filename, const std::string &path = "/Tensor/Sparse");
 
   template <typename F>
   class Tensor {
@@ -148,7 +147,12 @@ namespace TNT::Tensor::Sparse {
     }
 
     Tensor<F> &merge(const std::string &idx);
+    Tensor<F> &split(const std::string &idx);
+
     Tensor<F> &merge(const std::array<UInt, 3> &idx);
+    Tensor<F> &split(const std::array<UInt, 3> &idx);
+
+    Tensor<F> trace(const std::string &idx) const;
 
     Tensor<F> &readFrom(const F *source, const double &eps = EPS);
     const Tensor<F> &writeTo(F *target, const double &eps = EPS) const;
@@ -204,8 +208,7 @@ namespace TNT::Tensor::Sparse {
   Tensor<F> IdentityMatrix(UInt d);
 
   template <typename F>
-  std::vector<std::array<Tensor<F>, 2>> kronecker_SVD(const Tensor<F> &T, UInt nsv,
-						      const double tolerance = EPS);
+  std::vector<std::array<Tensor<F>, 2>> kronecker_SVD(const Tensor<F> &T, UInt nsv, const double tolerance = EPS);
 
 } // namespace TNT::Tensor::Sparse
 

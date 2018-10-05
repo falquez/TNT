@@ -113,7 +113,12 @@ namespace TNT::Tensor {
     }
 
     Tensor<F> &merge(const std::string &idx);
+    Tensor<F> &split(const std::string &idx);
+
     Tensor<F> &merge(const std::array<UInt, 3> &idx);
+    Tensor<F> &split(const std::array<UInt, 3> &idx);
+
+    Tensor<F> trace(const std::string &idx) const;
 
     double norm2() const;
 
