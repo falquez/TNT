@@ -1,0 +1,73 @@
+{
+    "metadata": {
+        "description": "Example configuration file for the (1+1) Kogut-Susskind Hamiltonian."
+    },
+    "tolerance": {
+        "convergence": 1e-05,
+        "eigenvalue": 1e-08,
+        "svd": 1e-10
+    },
+    "directories": {
+        "results": "results",
+        "network": "network"
+    },
+    "network": {
+        "length": 10,
+        "max_bond_dim": 10,
+        "topology": "MPS"
+    },
+    "hamiltonian": {
+        "dim": 6,
+        "mpo": {
+            "dim": 6,
+            "blocks": [
+                { "position": [ 1, 1], "operator":  "Id"},
+                { "position": [ 2, 1], "operator":  "sqrt(x)*V1"},
+                { "position": [ 3, 1], "operator":  "sqrt(x)*V2"},
+                { "position": [ 4, 1], "operator":  "sqrt(x)*V3"},
+                { "position": [ 5, 1], "operator":  "sqrt(x)*V4"},
+                { "position": [6, 1], "expression": "E + (Id+sgn(l)*N)*y" },
+                { "position": [6, 2], "operator":   "sqrt(x)*U1"},
+                { "position": [6, 3], "operator":   "sqrt(x)*U2"},
+                { "position": [6, 4], "operator":   "sqrt(x)*U3"},
+                { "position": [6, 5], "operator":   "sqrt(x)*U4"},
+                { "position": [6, 6], "operator":   "Id"}
+            ]
+        }
+    },
+    "parameters": {
+        "g": [0.6, 1.0, 5],
+        "m": 0.12,
+        "x": "1/(g*g)",
+        "y": "2*m/(g*g)",
+        "VAR": "1/(g*g*g*g)"
+    },
+    "operators": {
+        "E": {
+            "file": "hamiltonian2_2.hdf5",
+            "path": "/HilbertSpace/Operator/E",
+            "sparse": true
+        },
+        "N": {
+            "file": "hamiltonian2_2.hdf5",
+            "path": "/HilbertSpace/Operator/N",
+            "sparse": true
+        },
+        "U": {
+            "file": "hamiltonian2_2.hdf5",
+            "path": "/HilbertSpace/Operator/U",
+            "sparse": true,
+            "size": 4
+        },
+        "V": {
+            "file": "hamiltonian2_2.hdf5",
+            "path": "/HilbertSpace/Operator/V",
+            "sparse": true,
+            "size": 4
+        }
+    },
+    "observables": {
+        "C2": { "type": "shift", "value": 2}
+    },
+    "restart": false
+}
