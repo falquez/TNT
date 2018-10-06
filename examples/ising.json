@@ -18,6 +18,12 @@
     },
     "hamiltonian": {
         "dim": 2,
+        "operators": {
+            "1": ["-J*g*Sx"],
+            "2": [
+                ["-sqrt(J)*Sz", "sqrt(J)*Sz"]
+            ]
+        },
         "mpo": {
             "dim": 3,
             "blocks": [
