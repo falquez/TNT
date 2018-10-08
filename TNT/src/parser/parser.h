@@ -30,12 +30,12 @@ namespace TNT::Parser {
 
   template <typename T, typename F>
   class Parser {
-
+    std::string config_file;
     std::map<std::string, T> O;
     std::map<std::string, double> P;
 
   public:
-    Parser(const std::map<std::string, Configuration::Operator<F>> &operators, const std::map<std::string, double> &P);
+    Parser(const std::string &config_file, const std::map<std::string, double> &P);
 
     T parse(const std::string &s, int pos = 0) const;
 

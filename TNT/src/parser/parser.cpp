@@ -20,6 +20,7 @@
 
 #include "parser.h"
 
+#include <TNT/configuration/operator.h>
 #include <TNT/tensor/sparse/tensor.h>
 #include <TNT/tensor/tensor.h>
 
@@ -28,9 +29,7 @@
 namespace TNT::Parser {
 
   template <typename T, typename F>
-  Parser<T, F>::Parser(const std::map<std::string, Configuration::Operator<F>> &operators,
-		       const std::map<std::string, double> &P)
-      : P{P} {
+  Parser<T, F>::Parser(const std::string &config_file, const std::map<std::string, double> &P) : P{P} {
     throw std::invalid_argument("Not Implemented");
   };
 
@@ -40,10 +39,11 @@ namespace TNT::Parser {
   };
 
   template <>
-  Parser<Tensor::Tensor<double>, double>::Parser(
-      const std::map<std::string, Configuration::Operator<double>> &operators, const std::map<std::string, double> &P)
+  Parser<Tensor::Tensor<double>, double>::Parser(const std::string &config_file, const std::map<std::string, double> &P)
       : P{P} {
     // unsigned int dimH = conf.hamiltonian.dim;
+
+    const auto operators = TNT::Configuration::Operators<double>(config_file);
 
     for (const auto &[name, op] : operators) {
       if (!op.rows.empty()) {
@@ -90,11 +90,13 @@ namespace TNT::Parser {
   };
 
   template <>
-  Parser<Tensor::Sparse::Tensor<double>, double>::Parser(
-      const std::map<std::string, Configuration::Operator<double>> &operators, const std::map<std::string, double> &P)
+  Parser<Tensor::Sparse::Tensor<double>, double>::Parser(const std::string &config_file,
+							 const std::map<std::string, double> &P)
       : P{P} {
 
     // unsigned int dimH = conf.hamiltonian.dim;
+
+    const auto operators = TNT::Configuration::Operators<double>(config_file);
 
     for (const auto &[name, op] : operators) {
       if (!op.rows.empty()) {

@@ -45,7 +45,7 @@ namespace TNT::Operator {
   MPO<F>::MPO(const Configuration::Configuration<F> &conf, const std::map<std::string, double> &P) : P{P} {
 
     const auto H = conf.hamiltonian;
-    const auto parser = Parser::Parser<Tensor::Sparse::Tensor<F>, F>(conf.operators, P);
+    const auto parser = Parser::Parser<Tensor::Sparse::Tensor<F>, F>(conf.config_file, P);
 
     _length = conf.network.length;
     _dimH = parser.dimH;
