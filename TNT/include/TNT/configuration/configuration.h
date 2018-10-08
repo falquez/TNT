@@ -24,8 +24,6 @@
 #include <vector>
 
 #include <TNT/configuration/hamiltonian.h>
-#include <TNT/configuration/observables.h>
-#include <TNT/configuration/operator.h>
 #include <TNT/configuration/parameters.h>
 
 namespace TNT::Configuration {
@@ -45,7 +43,6 @@ namespace TNT::Configuration {
 
   template <typename F>
   class Configuration {
-    const std::string config_file;
     std::map<std::string, std::string> directories;
     std::map<std::string, double> tolerances;
 
@@ -59,10 +56,10 @@ namespace TNT::Configuration {
     Network network;
     Hamiltonian hamiltonian;
     std::map<std::string, Constraint> constraints;
-    std::map<std::string, Operator<F>> operators;
+    // std::map<std::string, Operator<F>> operators;
 
-    Observables<F> observables;
     Parameters parameters;
+    const std::string config_file;
 
     bool restart = false;
   };

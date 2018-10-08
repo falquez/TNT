@@ -27,7 +27,7 @@
 #include <nlohmann/json.hpp>
 
 namespace TNT::Configuration {
-  template <typename F>
+  /*template <typename F>
   std::vector<std::vector<F>> read_rows(const std::vector<nlohmann::json> &rows);
 
   template <>
@@ -38,7 +38,7 @@ namespace TNT::Configuration {
       res.push_back(row);
     }
     return res;
-  }
+  }*/
 
   template <typename F>
   Configuration<F>::Configuration(const std::string &config_file) : config_file{config_file}, parameters{config_file} {
@@ -53,6 +53,9 @@ namespace TNT::Configuration {
     network.length = j["network"]["length"];
     // @TODO
     network.topology = Topology::MPS; // j["network"]["topology"]
+
+    // Initialize operators
+    // operators = Operators<F>(config_file);
 
     // Initialize hamiltonian
     auto h_object = j["hamiltonian"];
@@ -103,7 +106,7 @@ namespace TNT::Configuration {
       constraints.emplace(name, cnt);
     }
     // Initialize operators
-    std::map<std::string, nlohmann::json> op_object = j["operators"];
+    /*std::map<std::string, nlohmann::json> op_object = j["operators"];
     for (const auto &[name, obj] : op_object) {
       Operator<F> op(name);
       if (obj.find("rows") != obj.end()) {
@@ -122,9 +125,9 @@ namespace TNT::Configuration {
       }
       // operators.push_back(op);
       operators.emplace(name, op);
-    }
+    }*/
 
-    observables = Observables<F>(config_file, operators);
+    // observables = Observables<F>(config_file, operators);
   } // namespace TNT::Configuration
 } // namespace TNT::Configuration
 

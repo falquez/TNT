@@ -19,6 +19,7 @@
 #ifndef _TNT_CONFIGURATION_OPERATOR_H
 #define _TNT_CONFIGURATION_OPERATOR_H
 
+#include <map>
 #include <string>
 #include <vector>
 
@@ -39,6 +40,9 @@ namespace TNT::Configuration {
              const std::string &path, bool sparse, unsigned int size)
         : name{name}, file{file}, path{path}, sparse{sparse}, size{size} {}*/
   };
+
+  template <typename F>
+  std::map<std::string, Operator<F>> Operators(const std::string &config_file);
 
 } // namespace TNT::Configuration
 

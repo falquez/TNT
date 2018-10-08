@@ -9,6 +9,7 @@ add_library(TNT
     src/algebra/tensorTranspose.cpp
     src/configuration/configuration.cpp
     src/configuration/observables.cpp
+    src/configuration/operator.cpp
     src/configuration/parameters.cpp
     src/extern/blas.cpp
     src/extern/lapack.cpp

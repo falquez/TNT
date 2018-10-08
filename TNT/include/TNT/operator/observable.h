@@ -31,15 +31,18 @@ namespace TNT::Operator {
   template <typename F>
   class Observable {
     ObservableType _kind;
-    UInt _dimH;
-    UInt _length;
+    // UInt _dimH;
+    // UInt _length;
 
     std::vector<Tensor::Tensor<F>> O;
 
   public:
     Observable(){};
     Observable(const std::string &name, const ObservableType &kind) : _kind{kind}, name{name} {}
-    Observable(const std::string &name, const ObservableType &kind, const Configuration::Operator<F> &op);
+    Observable(const std::string &name, const ObservableType &kind, Tensor::Tensor<F> &&O)
+	: _kind{kind}, name{name}, O{O} {};
+    Observable(const std::string &name, const ObservableType &kind, std::vector<Tensor::Tensor<F>> &&O)
+	: _kind{kind}, name{name}, O{O} {};
     const Tensor::Tensor<F> &operator[](unsigned int site) const;
 
     ObservableType kind() const { return _kind; }

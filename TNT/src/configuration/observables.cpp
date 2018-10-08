@@ -17,16 +17,18 @@
  */
 
 #include <TNT/configuration/observables.h>
+#include <TNT/configuration/operator.h>
 
 #include <METL/metl.h>
+#include <fstream>
 #include <nlohmann/json.hpp>
 
-#include <fstream>
+#include "../parser/parser.h"
 
 namespace TNT::Configuration {
 
   template <typename F>
-  Observables<F>::Observables(const std::string &config_file, const std::map<std::string, Operator<F>> &operators)
+  Observables<F>::Observables(const std::string &config_file, const std::map<std::string, double> &P)
       : config_file{config_file} {
     nlohmann::json j;
     std::ifstream f(config_file);
@@ -35,20 +37,23 @@ namespace TNT::Configuration {
 
     std::map<std::string, nlohmann::json> obs_object = j["observables"];
 
+    const auto operators = Operators<F>(config_file);
+
+    const auto parser = Parser::Parser<Tensor::Tensor<F>, F>(config_file, P);
+
     for (const auto &[name, obs] : obs_object) {
       std::string kind = obs["type"];
-      TNT::Operator::ObservableType _type;
-      if (obs.find("operator") != obs.end()) {
-        if (kind == "site")
-          _type = TNT::Operator::ObservableType::Site;
-        if (kind == "correlation")
-          _type = TNT::Operator::ObservableType::Correlation;
+      if (kind == "site") {
+	std::string op_name = obs["operator"];
+	O.push_back(TNT::Operator::Observable<F>(name, TNT::Operator::ObservableType::Site, parser.parse(op_name, 0)));
+      }
+      if (kind == "correlation") {
         std::string op_name = obs["operator"];
-        O.push_back(TNT::Operator::Observable<F>(name, _type, operators.at(op_name)));
+	O.push_back(
+	    TNT::Operator::Observable<F>(name, TNT::Operator::ObservableType::Correlation, parser.parse(op_name, 0)));
       }
       if (kind == "shift") {
-        _type = TNT::Operator::ObservableType::Shift;
-        O.push_back(TNT::Operator::Observable<F>(name, _type));
+	O.push_back(TNT::Operator::Observable<F>(name, TNT::Operator::ObservableType::Shift));
         O.back().shift = obs["value"];
       }
     }

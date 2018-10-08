@@ -20,8 +20,9 @@
 
 namespace TNT::Operator {
 
-  template <typename F>
-  Observable<F>::Observable(const std::string &name, const ObservableType &kind, const Configuration::Operator<F> &op)
+  /*template <typename F>
+  Observable<F>::Observable(const std::string &name, const ObservableType &kind, const Configuration::Operator<F> &op,
+			    const std::map<std::string, double> &P)
       : _kind{kind}, name{name} {
     if (!op.rows.empty()) {
       _length = 1;
@@ -32,7 +33,7 @@ namespace TNT::Operator {
         for (unsigned int j = 0; j < _dimH; j++)
           O[0][{i, j}] = op.rows[i][j];
     }
-  }
+}*/
 
   template <typename F>
   const Tensor::Tensor<F> &Observable<F>::operator[](unsigned int site) const {
