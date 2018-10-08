@@ -14,64 +14,48 @@
     "network": {
         "topology": "MPS",
         "length": 10,
-        "max_bond_dim": 10,
+        "max_bond_dim": 10
     },
     "hamiltonian": {
         "dim": 6,
         "operators": {
-            "1": ["E", "sgn(l)*y*N", "y*Id"],
-            "2": [
+            "single": "E + y*(Id+sgn(l)*N)",
+            "nearest": [
                 [ "sqrt(x)*U1", "sqrt(x)*V1" ],
                 [ "sqrt(x)*U2", "sqrt(x)*V2" ],
                 [ "sqrt(x)*U3", "sqrt(x)*V3" ],
                 [ "sqrt(x)*U4", "sqrt(x)*V4" ]
-            ]
-        },
-        "mpo": {
-            "dim": 6,
-            "blocks": [
-                { "position": [ 1, 1], "operator":  "Id"},
-                { "position": [ 2, 1], "operator":  "sqrt(x)*V1"},
-                { "position": [ 3, 1], "operator":  "sqrt(x)*V2"},
-                { "position": [ 4, 1], "operator":  "sqrt(x)*V3"},
-                { "position": [ 5, 1], "operator":  "sqrt(x)*V4"},
-                { "position": [6, 1], "expression": "E + (Id+sgn(l)*N)*y" },
-                { "position": [6, 2], "operator":   "sqrt(x)*U1"},
-                { "position": [6, 3], "operator":   "sqrt(x)*U2"},
-                { "position": [6, 4], "operator":   "sqrt(x)*U3"},
-                { "position": [6, 5], "operator":   "sqrt(x)*U4"},
-                { "position": [6, 6], "operator":   "Id"}
             ]
         }
     },
     "constraints": {
         "meson": {
             "operator": "N - Id",
-            "weight": 1E4
+            "weight": 2
         },
         "boundary1": {
             "operator": "F",
             "site": 1,
-            "weight": 1E4
+            "weight": 1E3
         },
         "boundary2": {
             "operator": "E",
             "site": 10,
-            "weight": 1E4
+            "weight": 1E3
         }
     },
     "observables": {
         "C2": { "type": "shift", "value": 2}
     },
     "operators": {
-        "F": {
-            "file": "hamiltonian2_2.hdf5",
-            "path": "/HilbertSpace/Operator/F",
-            "sparse": true
-        },
         "E": {
             "file": "hamiltonian2_2.hdf5",
             "path": "/HilbertSpace/Operator/E",
+            "sparse": true
+        },
+        "F": {
+            "file": "hamiltonian2_2.hdf5",
+            "path": "/HilbertSpace/Operator/F",
             "sparse": true
         },
         "N": {
