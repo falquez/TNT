@@ -33,6 +33,7 @@ namespace TNT::Operator::Sparse {
     UInt _dimH;
     UInt _length;
     std::map<std::string, double> P;
+    std::map<std::string, Configuration::Constraint> C;
     std::vector<Tensor::Sparse::Tensor<F>> W;
     MPO(){};
 
@@ -40,6 +41,8 @@ namespace TNT::Operator::Sparse {
     MPO(const UInt dimW, const UInt dimH, const UInt length);
 
     MPO(const Configuration::Configuration<F> &conf, const std::map<std::string, double> &P);
+    MPO(const Configuration::Configuration<F> &conf, const std::map<std::string, double> &P,
+	const std::map<std::string, Configuration::Constraint> &C);
 
     // Calculate W("b1,b1',b2,b2',a1,a2'") = W1("b1,b2,a1,a2")W2("b1',b2',a2,a2'")
     // then merge b1''=(b1,b1') b2''=(b2,b2') to W("b1'',b2'',a1,a2'") =

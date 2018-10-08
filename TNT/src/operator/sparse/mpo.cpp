@@ -22,6 +22,7 @@
 #include <TNT/operator/sparse/mpo.h>
 #include <TNT/tensor/sparse/contraction.h>
 #include <TNT/tensor/sparse/tensor.h>
+#include <TNT/tensor/tensor.h>
 
 #include "../../parser/parser.h"
 
@@ -36,8 +37,7 @@ namespace TNT::Operator::Sparse {
    */
 
   template <typename F>
-  MPO<F>::MPO(const UInt dimW, const UInt dimH, const UInt length)
-      : _dimW{dimW}, _dimH{dimH}, _length{length} {
+  MPO<F>::MPO(const UInt dimW, const UInt dimH, const UInt length) : _dimW{dimW}, _dimH{dimH}, _length{length} {
     W = std::vector<Tensor::Sparse::Tensor<F>>(_length);
 
     W[0] = Tensor::Sparse::Tensor<F>({1, dimW, dimH, dimH});
@@ -47,49 +47,234 @@ namespace TNT::Operator::Sparse {
   }
 
   template <typename F>
-  MPO<F>::MPO(const Configuration::Configuration<F> &conf, const std::map<std::string, double> &P)
-      : P{P} {
+  MPO<F>::MPO(const Configuration::Configuration<F> &conf, const std::map<std::string, double> &P) : P{P} {
 
-    auto network = conf.network;
-    auto hamiltonian = conf.hamiltonian;
-    auto mpo = hamiltonian.mpo.value();
+    const auto H = conf.hamiltonian;
+    const auto parser = Parser::Parser<Tensor::Sparse::Tensor<F>, F>(conf.operators, P);
 
-    auto parser = Parser::Parser<Tensor::Sparse::Tensor<F>, F>(conf, P);
+    _length = conf.network.length;
+    _dimH = parser.dimH;
+    /*@TODO: generalize this */
+    _dimW = +H.nearest.size() + 2;
 
-    _dimH = hamiltonian.dim;
-    _dimW = mpo.dim;
-    _length = network.length;
+    std::cout << "Initializing Sparse::MPO";
+    std::cout << " length=" << _length << " dimH=" << _dimH << " dimW=" << _dimW;
+    std::cout << std::endl;
+
+    W = std::vector<Tensor::Sparse::Tensor<F>>(_length);
+    for (unsigned int l = 0; l < _length; l++) {
+      if (l == 0) {
+	W[l] = Tensor::Sparse::Tensor<F>({1, _dimW, _dimH, _dimH});
+	// Parse single site
+	if (H.single_site) {
+	  Tensor::Sparse::Tensor<F> res = parser.parse(*H.single_site, l);
+	  for (const auto &[idx, v] : res.elements2())
+	    W[l] <<= {{0, 0, idx[0], idx[1]}, v};
+	}
+	// Parse nearest neighbourg interaction
+	for (unsigned int k = 1; k <= H.nearest.size(); k++) {
+	  const auto &[left, right] = H.nearest[k - 1];
+	  Tensor::Sparse::Tensor<F> res = parser.parse(left, l);
+	  for (const auto &[idx, v] : res.elements2())
+	    W[l] <<= {{0, k, idx[0], idx[1]}, v};
+	}
+	// Write identity
+	for (unsigned int i = 0; i < _dimH; i++)
+	  W[l] <<= {{0, _dimW - 1, i, i}, 1.0};
+      } else if ((0 < l) && (l < _length - 1)) {
+	W[l] = Tensor::Sparse::Tensor<F>({_dimW, _dimW, _dimH, _dimH});
+	// Parse single site
+	if (H.single_site) {
+	  Tensor::Sparse::Tensor<F> res = parser.parse(*H.single_site, l);
+	  for (const auto &[idx, v] : res.elements2())
+	    W[l] <<= {{_dimW - 1, 0, idx[0], idx[1]}, v};
+	}
+	// Parse nearest neighbourg interaction
+	for (unsigned int k = 1; k <= H.nearest.size(); k++) {
+	  const auto &[left, right] = H.nearest[k - 1];
+	  for (const auto &[idx, v] : parser.parse(left, l).elements2())
+	    W[l] <<= {{_dimW - 1, k, idx[0], idx[1]}, v};
+	  for (const auto &[idx, v] : parser.parse(right, l).elements2())
+	    W[l] <<= {{k, 0, idx[0], idx[1]}, v};
+	}
+	// Write identity
+	for (unsigned int i = 0; i < _dimH; i++) {
+	  W[l] <<= {{0, 0, i, i}, 1.0};
+	  W[l] <<= {{_dimW - 1, _dimW - 1, i, i}, 1.0};
+	}
+      } else if (l == _length - 1) {
+	W[l] = Tensor::Sparse::Tensor<F>({_dimW, 1, _dimH, _dimH});
+	// Parse single site
+	if (H.single_site) {
+	  Tensor::Sparse::Tensor<F> res = parser.parse(*H.single_site, l);
+	  for (const auto &[idx, v] : res.elements2())
+	    W[l] <<= {{_dimW - 1, 0, idx[0], idx[1]}, v};
+	}
+	// Parse nearest neighbourg interaction
+	for (unsigned int k = 1; k <= H.nearest.size(); k++) {
+	  const auto &[left, right] = H.nearest[k - 1];
+	  for (const auto &[idx, v] : parser.parse(right, l).elements2())
+	    W[l] <<= {{k, 0, idx[0], idx[1]}, v};
+	}
+	// Write identity
+	for (unsigned int i = 0; i < _dimH; i++)
+	  W[l] <<= {{0, 0, i, i}, 1.0};
+      }
+    }
+  }
+
+  template <typename F>
+  MPO<F>::MPO(const Configuration::Configuration<F> &conf, const std::map<std::string, double> &P,
+	      const std::map<std::string, Configuration::Constraint> &C)
+      : P{P}, C{C} {
+
+    const auto H = conf.hamiltonian;
+    const auto parser = Parser::Parser<Tensor::Sparse::Tensor<F>, F>(conf.operators, P);
+
+    // Classify constraints
+    std::vector<std::string> local_constraint;
+    std::vector<std::string> global_constraint;
+    for (const auto &[name, cnt] : C) {
+      if (cnt.site == 0) {
+	std::cout << "Global constraint " << name << std::endl;
+	global_constraint.push_back(name);
+      } else {
+	std::cout << "Local constraint " << name << std::endl;
+	local_constraint.push_back(name);
+      }
+    }
+
+    _length = conf.network.length;
+    _dimH = parser.dimH;
+    /*@TODO: generalize this */
+    _dimW = H.nearest.size() + global_constraint.size() + 2;
+
+    std::cout << "Initializing Sparse::MPO";
+    std::cout << " length=" << _length << " dimH=" << _dimH << " dimW=" << _dimW;
+    std::cout << std::endl;
 
     W = std::vector<Tensor::Sparse::Tensor<F>>(_length);
 
-    W[0] = Tensor::Sparse::Tensor<F>({1, _dimW, _dimH, _dimH});
-    for (unsigned int l = 1; l < _length - 1; l++)
-      W[l] = Tensor::Sparse::Tensor<F>({_dimW, _dimW, _dimH, _dimH});
-    W[_length - 1] = Tensor::Sparse::Tensor<F>({_dimW, 1, _dimH, _dimH});
+    for (unsigned int l = 0; l < _length; l++) {
+      if (l == 0) {
+	W[l] = Tensor::Sparse::Tensor<F>({1, _dimW, _dimH, _dimH});
+	// Parse single site
+	if (H.single_site) {
+	  Tensor::Sparse::Tensor<F> res = parser.parse(*H.single_site, l);
+	  for (const auto &[idx, v] : res.elements2())
+	    W[l] <<= {{0, 0, idx[0], idx[1]}, v};
+	}
+	// Parse nearest neighbourg interaction
+	for (unsigned int k = 1; k <= H.nearest.size(); k++) {
+	  const auto &[left, right] = H.nearest[k - 1];
+	  Tensor::Sparse::Tensor<F> res = parser.parse(left, l);
+	  for (const auto &[idx, v] : res.elements2())
+	    W[l] <<= {{0, k, idx[0], idx[1]}, v};
+	}
+	// Parse global constraints
+	{
+	  // Tensor::Sparse::Tensor<F> CW({1, _dimW, _dimH, _dimH});
+	  unsigned int col = H.nearest.size() + 1;
+	  for (unsigned int k = 0; k < global_constraint.size(); k++) {
+	    const auto cnt = C.at(global_constraint[k]);
+	    Tensor::Sparse::Tensor<F> P1, P2;
+	    P1 = parser.parse(cnt.expression, l);
+	    P2("a,b") = P1("a,c") * P1.conjugate()("c,b");
+	    std::cout << "P1=" << P1 << std::endl;
+	    std::cout << "P2=" << P2 << std::endl;
+	    for (const auto &[idx, v] : P1.elements2()) {
+	      W[l] += {{0, col + k, idx[0], idx[1]}, v * cnt.weight};
+	    }
+	    for (const auto &[idx, v] : P2.elements2()) {
+	      F nv = (v * cnt.weight * cnt.weight * 0.5);
+	      std::cout << "  l=" << l << " idx=" << idx[0] << "," << idx[1] << " nv=" << nv << std::endl;
+	      W[l] += {{0, 0, idx[0], idx[1]}, nv};
+	    }
+	    // W[l] += CW;
+	  }
+	}
+	// Write identity
+	for (unsigned int i = 0; i < _dimH; i++)
+	  W[l] <<= {{0, _dimW - 1, i, i}, 1.0};
 
-    for (const auto &block : mpo.blocks) {
-      unsigned int row = block.position[0];
-      unsigned int col = block.position[1];
-      std::string expression;
-      if (block.name) {
-        expression = *block.name;
-      } else if (block.expression) {
-        expression = *block.expression;
-      }
-      if (row == _dimW - 1) {
-        Tensor::Sparse::Tensor<F> res = parser.parse(expression, 0);
-        for (const auto &[idx, v] : res.elements2())
-          W[0] <<= {{0, col, idx[0], idx[1]}, v};
-      }
-      for (unsigned int l = 1; l < _length - 1; l++) {
-        Tensor::Sparse::Tensor<F> res = parser.parse(expression, l);
-        for (const auto &[idx, v] : res.elements2())
-          W[l] <<= {{row, col, idx[0], idx[1]}, v};
-      }
-      if (col == 0) {
-        Tensor::Sparse::Tensor<F> res = parser.parse(expression, _length);
-        for (const auto &[idx, v] : res.elements2())
-          W[_length - 1] <<= {{row, 0, idx[0], idx[1]}, v};
+      } else if ((0 < l) && (l < _length - 1)) {
+
+	W[l] = Tensor::Sparse::Tensor<F>({_dimW, _dimW, _dimH, _dimH});
+	// Parse single site
+	if (H.single_site) {
+	  Tensor::Sparse::Tensor<F> res = parser.parse(*H.single_site, l);
+	  for (const auto &[idx, v] : res.elements2())
+	    W[l] <<= {{_dimW - 1, 0, idx[0], idx[1]}, v};
+	}
+	// Parse nearest neighbourg interaction
+	for (unsigned int k = 1; k <= H.nearest.size(); k++) {
+	  const auto &[left, right] = H.nearest[k - 1];
+	  for (const auto &[idx, v] : parser.parse(left, l).elements2())
+	    W[l] <<= {{_dimW - 1, k, idx[0], idx[1]}, v};
+	  for (const auto &[idx, v] : parser.parse(right, l).elements2())
+	    W[l] <<= {{k, 0, idx[0], idx[1]}, v};
+	}
+	// Parse global constraints
+	{
+	  unsigned int col = H.nearest.size() + 1;
+	  for (unsigned int k = 0; k < global_constraint.size(); k++) {
+	    const auto cnt = C.at(global_constraint[k]);
+	    Tensor::Sparse::Tensor<F> P1, P2;
+	    P1 = parser.parse(cnt.expression, l);
+	    P2("a,b") = P1("a,c") * P1.conjugate()("c,b");
+	    std::cout << "P1=" << P1 << std::endl;
+	    std::cout << "P2=" << P2 << std::endl;
+	    for (const auto &[idx, v] : P1.elements2()) {
+	      W[l] += {{col + k, 0, idx[0], idx[1]}, v * cnt.weight};
+	      W[l] += {{_dimW - 1, col + k, idx[0], idx[1]}, -v * cnt.weight};
+	    }
+	    for (const auto &[idx, v] : P2.elements2()) {
+	      W[l] += {{_dimW - 1, 0, idx[0], idx[1]}, (v * cnt.weight * cnt.weight * 0.5)};
+	    }
+	  }
+	}
+	// Write identity
+	for (unsigned int i = 0; i < _dimH; i++) {
+	  W[l] <<= {{0, 0, i, i}, 1.0};
+	  W[l] <<= {{_dimW - 1, _dimW - 1, i, i}, 1.0};
+	}
+
+      } else if (l == _length - 1) {
+
+	W[l] = Tensor::Sparse::Tensor<F>({_dimW, 1, _dimH, _dimH});
+	// Parse single site
+	if (H.single_site) {
+	  Tensor::Sparse::Tensor<F> res = parser.parse(*H.single_site, l);
+	  for (const auto &[idx, v] : res.elements2())
+	    W[l] <<= {{_dimW - 1, 0, idx[0], idx[1]}, v};
+	}
+	// Parse nearest neighbourg interaction
+	for (unsigned int k = 1; k <= H.nearest.size(); k++) {
+	  const auto &[left, right] = H.nearest[k - 1];
+	  for (const auto &[idx, v] : parser.parse(right, l).elements2())
+	    W[l] <<= {{k, 0, idx[0], idx[1]}, v};
+	}
+	// Parse global constraints
+	{
+	  unsigned int col = H.nearest.size() + 1;
+	  for (unsigned int k = 0; k < global_constraint.size(); k++) {
+	    const auto cnt = C.at(global_constraint[k]);
+	    Tensor::Sparse::Tensor<F> P1, P2;
+	    P1 = parser.parse(cnt.expression, l);
+	    P2("a,b") = P1("a,c") * P1.conjugate()("c,b");
+	    std::cout << "P1=" << P1 << std::endl;
+	    std::cout << "P2=" << P2 << std::endl;
+	    for (const auto &[idx, v] : P1.elements2()) {
+	      W[l] += {{col + k, 0, idx[0], idx[1]}, v * cnt.weight};
+	    }
+	    for (const auto &[idx, v] : P2.elements2()) {
+	      W[l] += {{_dimW - 1, 0, idx[0], idx[1]}, (v * cnt.weight * cnt.weight * 0.5)};
+	    }
+	  }
+	}
+	// Write identity
+	for (unsigned int i = 0; i < _dimH; i++)
+	  W[l] <<= {{0, 0, i, i}, 1.0};
       }
     }
   }
@@ -149,13 +334,11 @@ namespace TNT::Operator::Sparse {
 template class TNT::Operator::Sparse::MPO<double>;
 template class TNT::Operator::Sparse::MPO<std::complex<double>>;
 
-template TNT::Operator::Sparse::MPO<double>
-TNT::Operator::Sparse::Identity<double>(const UInt dimW, const UInt dimH, const UInt length);
+template TNT::Operator::Sparse::MPO<double> TNT::Operator::Sparse::Identity<double>(const UInt dimW, const UInt dimH,
+										    const UInt length);
 template TNT::Operator::Sparse::MPO<std::complex<double>>
-TNT::Operator::Sparse::Identity<std::complex<double>>(const UInt dimW, const UInt dimH,
-                                                      const UInt length);
+TNT::Operator::Sparse::Identity<std::complex<double>>(const UInt dimW, const UInt dimH, const UInt length);
 
-template std::ostream &TNT::Operator::Sparse::operator<<<double>(std::ostream &,
-                                                                 const MPO<double> &);
-template std::ostream &TNT::Operator::Sparse::
-operator<<<std::complex<double>>(std::ostream &, const MPO<std::complex<double>> &);
+template std::ostream &TNT::Operator::Sparse::operator<<<double>(std::ostream &, const MPO<double> &);
+template std::ostream &TNT::Operator::Sparse::operator<<<std::complex<double>>(std::ostream &,
+									       const MPO<std::complex<double>> &);
