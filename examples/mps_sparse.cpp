@@ -58,7 +58,7 @@ int main(int argc, char **argv) {
 
   const auto L = config.network.length;
   const auto results_dir = config.directory("results");
-  const auto network_dir = config.directory("network");
+  // const auto network_dir = config.directory("network");
 
   const unsigned int n_max = 10;
 
@@ -87,17 +87,20 @@ int main(int argc, char **argv) {
 
       // Output directory for this parameter set
       const std::string output_dir = results_dir + "/" + format(n) + "/" + format(p_i) + "/";
+      const std::string network_dir = output_dir + config.directory("network") + "/";
       // Check if already finished
       if (boost::filesystem::exists(output_dir + "result.txt"))
         continue;
 
-      // Create output directories
-      boost::filesystem::create_directories(output_dir + network_dir);
+      // Create network output directories
+      boost::filesystem::create_directories(network_dir);
 
       Network::State state(output_dir + "/state.json");
 
       const auto [i_l, i_r, i_dir] = A[n].position(state);
 
+      // std::cout << "Reading position i=" << state.iteration << " i_l=" << i_l << " i_r=" << i_r;
+      // std::cout << " i_dir=" << (i_dir == Network::MPS::Sweep::Direction::Right ? "r" : "l") << std::endl;
       // Projection Operators
       std::vector<Tensor::Projector<NumericalType>> P(n);
 
@@ -174,8 +177,8 @@ int main(int argc, char **argv) {
         std::cout << std::endl;
 
         // Store solutions to disk
-        Tensor::writeToFile(A[n][l], output_dir + network_dir + "/" + format(l), "/Tensor");
-        Tensor::writeToFile(A[n][r], output_dir + network_dir + "/" + format(r), "/Tensor");
+	Tensor::writeToFile(A[n][l], network_dir + format(l), "/Tensor");
+	Tensor::writeToFile(A[n][r], network_dir + format(r), "/Tensor");
 
         // Update left contraction for next iteration
         switch (dir) {

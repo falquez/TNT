@@ -136,10 +136,10 @@ namespace TNT::Operator::Sparse {
     std::vector<std::string> global_constraint;
     for (const auto &[name, cnt] : C) {
       if (cnt.site == 0) {
-	std::cout << "Global constraint " << name << std::endl;
+	// std::cout << "Global constraint " << name << std::endl;
 	global_constraint.push_back(name);
       } else {
-	std::cout << "Local constraint " << name << std::endl;
+	// std::cout << "Local constraint " << name << std::endl;
 	local_constraint.push_back(name);
       }
     }
@@ -149,9 +149,9 @@ namespace TNT::Operator::Sparse {
     /*@TODO: generalize this */
     _dimW = H.nearest.size() + global_constraint.size() + 2;
 
-    std::cout << "Initializing Sparse::MPO";
-    std::cout << " length=" << _length << " dimH=" << _dimH << " dimW=" << _dimW;
-    std::cout << std::endl;
+    // std::cout << "Initializing Sparse::MPO";
+    // std::cout << " length=" << _length << " dimH=" << _dimH << " dimW=" << _dimW;
+    // std::cout << std::endl;
 
     W = std::vector<Tensor::Sparse::Tensor<F>>(_length);
 
@@ -187,7 +187,7 @@ namespace TNT::Operator::Sparse {
 	    }
 	    for (const auto &[idx, v] : P2.elements2()) {
 	      F nv = (v * cnt.weight * cnt.weight * 0.5);
-	      std::cout << "  l=" << l << " idx=" << idx[0] << "," << idx[1] << " nv=" << nv << std::endl;
+	      // std::cout << "  l=" << l << " idx=" << idx[0] << "," << idx[1] << " nv=" << nv << std::endl;
 	      W[l] += {{0, 0, idx[0], idx[1]}, nv};
 	    }
 	    // W[l] += CW;
@@ -226,7 +226,7 @@ namespace TNT::Operator::Sparse {
 	    std::cout << "P2=" << P2 << std::endl;
 	    for (const auto &[idx, v] : P1.elements2()) {
 	      W[l] += {{col + k, 0, idx[0], idx[1]}, v * cnt.weight};
-	      W[l] += {{_dimW - 1, col + k, idx[0], idx[1]}, -v * cnt.weight};
+	      W[l] += {{_dimW - 1, col + k, idx[0], idx[1]}, v * cnt.weight};
 	    }
 	    for (const auto &[idx, v] : P2.elements2()) {
 	      W[l] += {{_dimW - 1, 0, idx[0], idx[1]}, (v * cnt.weight * cnt.weight * 0.5)};
