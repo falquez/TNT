@@ -28,22 +28,24 @@
 namespace TNT::Parser {
 
   template <typename T, typename F>
-  Parser<T, F>::Parser(const Configuration::Configuration<F> &conf, const std::map<std::string, double> &P) : P{P} {
+  Parser<T, F>::Parser(const std::map<std::string, Configuration::Operator<F>> &operators,
+		       const std::map<std::string, double> &P)
+      : P{P} {
     throw std::invalid_argument("Not Implemented");
   };
 
   template <typename T, typename F>
-  T Parser<T, F>::parse(const std::string &s, int pos) {
+  T Parser<T, F>::parse(const std::string &s, int pos) const {
     throw std::invalid_argument("Not Implemented");
   };
 
   template <>
-  Parser<Tensor::Tensor<double>, double>::Parser(const Configuration::Configuration<double> &conf,
-                                                 const std::map<std::string, double> &P)
+  Parser<Tensor::Tensor<double>, double>::Parser(
+      const std::map<std::string, Configuration::Operator<double>> &operators, const std::map<std::string, double> &P)
       : P{P} {
-    unsigned int dimH = conf.hamiltonian.dim;
+    // unsigned int dimH = conf.hamiltonian.dim;
 
-    for (const auto &[name, op] : conf.operators) {
+    for (const auto &[name, op] : operators) {
       if (!op.rows.empty()) {
         unsigned int nrows = op.rows.size();
         unsigned int ncols = op.rows[0].size();
@@ -75,6 +77,8 @@ namespace TNT::Parser {
         }
       }
     }
+    /* @TODO: better strategy to read Hilbert space dimension*/
+    dimH = O.begin()->second.dimension().front();
     Tensor::Tensor<double> Id({dimH, dimH});
     for (unsigned int i = 0; i < dimH; i++)
       Id[{i, i}] = 1.0;
@@ -86,13 +90,13 @@ namespace TNT::Parser {
   };
 
   template <>
-  Parser<Tensor::Sparse::Tensor<double>, double>::Parser(const Configuration::Configuration<double> &conf,
-							 const std::map<std::string, double> &P)
+  Parser<Tensor::Sparse::Tensor<double>, double>::Parser(
+      const std::map<std::string, Configuration::Operator<double>> &operators, const std::map<std::string, double> &P)
       : P{P} {
 
-    unsigned int dimH = conf.hamiltonian.dim;
+    // unsigned int dimH = conf.hamiltonian.dim;
 
-    for (const auto &[name, op] : conf.operators) {
+    for (const auto &[name, op] : operators) {
       if (!op.rows.empty()) {
         unsigned int nrows = op.rows.size();
         unsigned int ncols = op.rows[0].size();
@@ -113,6 +117,8 @@ namespace TNT::Parser {
         }
       }
     }
+    /* @TODO: better strategy to read Hilbert space dimension*/
+    dimH = O.begin()->second.dimension().front();
     Tensor::Sparse::Tensor<double> Id({dimH, dimH});
     for (unsigned int i = 0; i < dimH; i++)
       Id <<= {{i, i}, 1.0};
@@ -120,15 +126,17 @@ namespace TNT::Parser {
   };
 
   template <>
-  Tensor::Tensor<double> Parser<Tensor::Tensor<double>, double>::parse(const std::string &s, int pos) {
+  Tensor::Tensor<double> Parser<Tensor::Tensor<double>, double>::parse(const std::string &s, int pos) const {
     using F = double;
 
     std::cout << "Parsing expression: " << s << std::endl;
     auto compiler = metl::makeCompiler<int, F, Tensor::Tensor<F>>();
-    compiler.setOperatorPrecedence("*", 2);
+    compiler.setOperatorPrecedence("*", 5);
     compiler.setOperatorPrecedence("+", 6);
-    compiler.setUnaryOperatorPrecedence("-", 5);
+    compiler.setOperatorPrecedence("-", 6);
+    compiler.setUnaryOperatorPrecedence("-", 3);
     compiler.setOperator<Tensor::Tensor<F>, Tensor::Tensor<F>>("+", [](auto l, auto r) { return l + r; });
+    compiler.setOperator<Tensor::Tensor<F>, Tensor::Tensor<F>>("-", [](auto l, auto r) { return l - r; });
     compiler.setOperator<Tensor::Tensor<F>, F>("*", [](auto l, auto r) { return l * r; });
     compiler.setOperator<F, Tensor::Tensor<F>>("*", [](auto l, auto r) { return r * l; });
     compiler.setOperator<Tensor::Tensor<F>, int>("*", [](auto l, auto r) { return l * r; });
@@ -154,15 +162,20 @@ namespace TNT::Parser {
   }
 
   template <>
-  Tensor::Sparse::Tensor<double> Parser<Tensor::Sparse::Tensor<double>, double>::parse(const std::string &s, int pos) {
+  Tensor::Sparse::Tensor<double> Parser<Tensor::Sparse::Tensor<double>, double>::parse(const std::string &s,
+										       int pos) const {
     using F = double;
+    std::cout << "Parsing expression: " << s << std::endl;
 
     auto compiler = metl::makeCompiler<int, F, Tensor::Sparse::Tensor<F>>();
-    compiler.setOperatorPrecedence("*", 2);
+    compiler.setOperatorPrecedence("*", 5);
     compiler.setOperatorPrecedence("+", 6);
-    compiler.setUnaryOperatorPrecedence("-", 5);
+    compiler.setOperatorPrecedence("-", 6);
+    compiler.setUnaryOperatorPrecedence("-", 3);
     compiler.setOperator<Tensor::Sparse::Tensor<F>, Tensor::Sparse::Tensor<F>>("+",
 									       [](auto l, auto r) { return l + r; });
+    compiler.setOperator<Tensor::Sparse::Tensor<F>, Tensor::Sparse::Tensor<F>>("-",
+									       [](auto l, auto r) { return l - r; });
     compiler.setOperator<Tensor::Sparse::Tensor<F>, F>("*", [](auto l, auto r) { return l * r; });
     compiler.setOperator<F, Tensor::Sparse::Tensor<F>>("*", [](auto l, auto r) { return r * l; });
     compiler.setOperator<Tensor::Sparse::Tensor<F>, int>("*", [](auto l, auto r) { return l * static_cast<F>(r); });
@@ -183,6 +196,8 @@ namespace TNT::Parser {
     }
 
     auto res = compiler.build<Tensor::Sparse::Tensor<F>>(s)();
+
+    std::cout << "res=" << res << std::endl;
 
     return res;
   }
