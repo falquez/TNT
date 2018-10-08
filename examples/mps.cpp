@@ -64,6 +64,7 @@ int main(int argc, char **argv) {
   for (const auto [p_i, params] : parameters.iterate()) {
     const Operator::MPO<NumericalType> W(config, params);
     const auto W2 = W * W;
+    std::cout << "W=" << W << std::endl;
 
     std::vector<Network::MPS::MPS<NumericalType>> A;
     std::vector<NumericalType> E(n_max);

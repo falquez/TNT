@@ -62,13 +62,22 @@ int main(int argc, char **argv) {
   const unsigned int n_max = 10;
 
   for (const auto [p_i, params] : parameters.iterate()) {
-    const Operator::Sparse::MPO<NumericalType> W(config, params);
-    const auto W2 = W * W;
 
+    const Operator::Sparse::MPO<NumericalType> W0(config, params);
     std::vector<Network::MPS::MPS<NumericalType>> A;
     std::vector<NumericalType> E(n_max);
 
+    std::cout << "W0=" << W0 << std::endl;
+
     for (unsigned int n = 0; n < n_max; n++) {
+
+      auto constraints = config.constraints;
+      if (n == 0)
+	constraints.clear();
+      const Operator::Sparse::MPO<NumericalType> W(config, params, constraints);
+      const auto W2 = W * W;
+
+      std::cout << "W =" << W << std::endl;
 
       // Create new MPS
       A.push_back(Network::MPS::MPS<NumericalType>(config));
