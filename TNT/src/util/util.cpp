@@ -136,20 +136,15 @@ namespace TNT::Util {
   }
 } // namespace TNT::Util
 
-template std::map<std::vector<int>, int>
-TNT::Util::indexed<std::vector<int>>(const std::set<std::vector<int>> &);
+template std::map<std::vector<int>, int> TNT::Util::indexed<std::vector<int>>(const std::set<std::vector<int>> &);
 
-template std::vector<int> TNT::Util::select<int>(const std::vector<int> &,
-                                                 const std::vector<int> &);
-template std::vector<unsigned int>
-TNT::Util::selectU<unsigned int>(const std::vector<unsigned int> &,
-                                 const std::vector<unsigned int> &);
-template std::vector<int> TNT::Util::selectU<int>(const std::vector<int> &,
-                                                  const std::vector<unsigned int> &);
+template std::vector<int> TNT::Util::select<int>(const std::vector<int> &, const std::vector<int> &);
+template std::vector<unsigned int> TNT::Util::selectU<unsigned int>(const std::vector<unsigned int> &,
+								    const std::vector<unsigned int> &);
+template std::vector<int> TNT::Util::selectU<int>(const std::vector<int> &, const std::vector<unsigned int> &);
 
 template unsigned int TNT::Util::multiply<unsigned int>(unsigned int const *, int);
 template int TNT::Util::multiply<int>(int const *, int);
 
 template std::string TNT::Util::stringify<int>(const std::vector<int> &, const std::string &);
-template std::string TNT::Util::stringify<unsigned int>(const std::vector<unsigned int> &,
-                                                        const std::string &);
+template std::string TNT::Util::stringify<unsigned int>(const std::vector<unsigned int> &, const std::string &);
