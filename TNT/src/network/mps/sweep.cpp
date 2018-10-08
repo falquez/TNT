@@ -26,6 +26,7 @@ namespace TNT::Network::MPS::Sweep {
   // Produce series
   // (1,2),(2,3),..,(L-2,L-1),(L-1,L),(L-1,L),(L-2,L-1),...(2,3),(1,2),(1,2),...
   std::tuple<ULong, ULong, Direction> Iterator::operator*() const {
+    // std::cout << "Iterator::operator* iteration i=" << state.iteration << std::endl;
     ULong i1 = state.iteration - 1;
     ULong l1 = length - 1;
     ULong p1 = i1 % l1;
@@ -40,14 +41,17 @@ namespace TNT::Network::MPS::Sweep {
   }
 
   Iterator &Iterator::operator++() {
-    ++state.iteration;
+    // std::cout << "Iterator::operator++ iteration i=" << state.iteration << std::endl;
     state.writeToFile();
+
+    ++state.iteration;
 
     return *this;
   }
 
   bool Iterator::operator!=(const Token) const {
-    ULong i1 = state.iteration - 2;
+    // std::cout << "Iterator::operator!= iteration i=" << state.iteration << std::endl;
+    /*ULong i1 = state.iteration - 2;
     ULong l1 = length - 1;
     ULong p1 = i1 % l1;
     ULong p2 = p1 + 1;
@@ -57,12 +61,12 @@ namespace TNT::Network::MPS::Sweep {
       auto tmp = p2;
       p2 = l1 - p1;
       p1 = l1 - tmp;
-    }
+    }*/
 
     double deltaEV = state.variance;
 
     bool converged = false;
-    if ((std::abs(deltaEV) < conv_tolerance) && (state.iteration > length)) {
+    if ((std::abs(deltaEV) < conv_tolerance) && (state.iteration > 2 * length)) {
       converged = true;
     }
 

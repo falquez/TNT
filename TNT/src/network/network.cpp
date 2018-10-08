@@ -50,7 +50,7 @@ namespace TNT::Network {
 
   int State::writeToFile() const {
     nlohmann::json j;
-    j["iteration"] = iteration + 1;
+    j["iteration"] = iteration;
     j["eigenvalue"] = eigenvalue;
     j["variance"] = variance;
 
