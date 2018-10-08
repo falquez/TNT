@@ -222,6 +222,24 @@ namespace TNT::Network::MPS {
 
     switch (O.kind()) {
     case Operator::ObservableType::Site:
+      std::cout << "Measuring site observable " << O.name << " O = " << O[1] << std::endl;
+      for (unsigned int l1 = 0; l1 < length; l1++) {
+
+	std::array<Tensor::Tensor<F>, 2> T;
+	T[0] = Tensor::Tensor<F>({1, 1}, 1.0);
+
+	for (unsigned int l = 0; l < length; l++) {
+	  unsigned int curr = l % 2;
+	  unsigned int next = (l + 1) % 2;
+	  Tensor::Tensor<F> _Ac = _A[l].conjugate();
+	  if (l == l1) {
+	    T[next]("a2,a2'") = T[curr]("a1,a1'") * _A[l]("s1,a1,a2") * O[1]("s1,s2") * _Ac("s2,a1',a2'");
+	  } else {
+	    T[next]("a2,a2'") = T[curr]("a1,a1'") * _A[l]("s1,a1,a2") * _Ac("s1,a1',a2'");
+	  }
+	}
+	result.push_back({std::vector<ULong>{l1}, T[length % 2][0]});
+      }
       break;
     case Operator::ObservableType::Correlation:
 
