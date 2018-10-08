@@ -45,6 +45,9 @@
         }
     },
     "observables": {
+        "N": { "type": "site", "operator": "N" },
+        "E": { "type": "site", "operator": "E" },
+        "F": { "type": "site", "operator": "F" },
         "C2": { "type": "shift", "value": 2}
     },
     "operators": {

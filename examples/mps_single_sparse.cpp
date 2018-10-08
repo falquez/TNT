@@ -23,6 +23,7 @@
 #include <vector>
 
 #include <TNT/configuration/configuration.h>
+#include <TNT/configuration/observables.h>
 #include <TNT/network/mps/mps.h>
 #include <TNT/network/network.h>
 #include <TNT/operator/mpo.h>
@@ -52,7 +53,6 @@ int main(int argc, char **argv) {
 
   // Read configuration
   const Configuration::Configuration<NumericalType> config(config_file);
-  const auto observables = config.observables;
   const auto parameters = config.parameters;
 
   const auto L = config.network.length;
@@ -71,6 +71,8 @@ int main(int argc, char **argv) {
     Network::MPS::MPS<NumericalType> A(config);
     const Operator::Sparse::MPO<NumericalType> W(config, params);
     const auto W2 = W * W;
+
+    const TNT::Configuration::Observables<NumericalType> observables(config.config_file, params);
 
     Network::State state(param_dir + "/state.json");
 
