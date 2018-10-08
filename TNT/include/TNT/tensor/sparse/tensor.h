@@ -112,9 +112,10 @@ namespace TNT::Tensor::Sparse {
     Tensor(const std::string &filename, const std::string &path, const unsigned int &id = 0);
     //~Tensor(){}
 
-    Tensor<F> &operator<<=(const std::tuple<std::vector<UInt>, std::optional<F>> &c);
     Tensor<F> &operator<<=(const std::vector<std::tuple<std::vector<UInt>, F>> &c);
+    Tensor<F> &operator<<=(const std::tuple<std::vector<UInt>, std::optional<F>> &c);
     Tensor<F> &operator<<=(const std::tuple<ULong, F> &c);
+    Tensor<F> &operator+=(const std::tuple<std::vector<UInt>, std::optional<F>> &c);
 
     F operator[](const std::vector<UInt> &idx) const;
 
@@ -161,7 +162,9 @@ namespace TNT::Tensor::Sparse {
 
     Tensor<F> &operator=(const Contraction<F> &tc);
 
+    Tensor<F> &operator+=(const Tensor<F> &M);
     Tensor<F> operator+(const Tensor<F> &M) const;
+    Tensor<F> operator-(const Tensor<F> &M) const;
 
     Tensor<F> transpose(const std::vector<UInt> tidx) const;
     Tensor<F> matricize(const std::vector<UInt> &row_idx, const std::vector<UInt> &col_idx) const;

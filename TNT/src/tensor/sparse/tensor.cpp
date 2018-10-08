@@ -32,7 +32,6 @@
 #include "../../util/util.h"
 
 namespace TNT::Tensor::Sparse {
-
   std::vector<UInt> convertIndex(const std::vector<UInt> &stride, const ULong &i) {
     std::vector<UInt> idx(stride.size());
     idx.back() = i / stride.back();
@@ -47,7 +46,6 @@ namespace TNT::Tensor::Sparse {
       i += idx[p] * stride[p];
     return i;
   }
-
   template <typename F>
   int writeToFile(const Tensor<F> &tensor, const std::string &filename, const std::string &path) {
     Storage::Storage storage(filename, Storage::FileMode::CreateOverwrite);
@@ -60,9 +58,8 @@ namespace TNT::Tensor::Sparse {
       data.push_back({convertIndex(stride, idx), v});
     }
 
-    std::sort(
-        data.begin(), data.end(),
-        [](Storage::Data::SparseL<F> a, Storage::Data::SparseL<F> b) { return a.idx < b.idx; });
+    std::sort(data.begin(), data.end(),
+	      [](Storage::Data::SparseL<F> a, Storage::Data::SparseL<F> b) { return a.idx < b.idx; });
     storage.create_group(path);
     storage.create(path, dims);
 
@@ -120,6 +117,14 @@ namespace TNT::Tensor::Sparse {
     else
       return 0.0;
   }
+  template <typename F>
+  F Tensor<F>::operator[](const ULong &idx) const {
+    typename ConcurrentHashMap<std::vector<UInt>, F>::const_accessor t;
+    if (data.find(t, convertIndex(stride, idx)))
+      return t->second;
+    else
+      return 0.0;
+  }
 
   template <typename F>
   Tensor<F> &Tensor<F>::operator<<=(const std::vector<std::tuple<std::vector<UInt>, F>> &v) {
@@ -144,15 +149,6 @@ namespace TNT::Tensor::Sparse {
     assert(std::get<0>(c) < totalDim);
     data.insert({convertIndex(stride, std::get<0>(c)), std::get<1>(c)});
     return *this;
-  }
-
-  template <typename F>
-  F Tensor<F>::operator[](const ULong &idx) const {
-    typename ConcurrentHashMap<std::vector<UInt>, F>::const_accessor t;
-    if (data.find(t, convertIndex(stride, idx)))
-      return t->second;
-    else
-      return 0.0;
   }
 
   template <typename F>
@@ -181,8 +177,7 @@ namespace TNT::Tensor::Sparse {
       nstride[i] = ndim[i - 1] * nstride[i - 1];
 
     ConcurrentHashMap<std::vector<UInt>, F> ndata;
-    for (typename ConcurrentHashMap<std::vector<UInt>, F>::const_iterator it = data.begin();
-         it != data.end(); it++) {
+    for (typename ConcurrentHashMap<std::vector<UInt>, F>::const_iterator it = data.begin(); it != data.end(); it++) {
       std::vector<UInt> nidx(ndim.size());
       std::vector<UInt> idx = it->first;
       for (UInt i = 0; i < m; i++)
@@ -217,11 +212,11 @@ namespace TNT::Tensor::Sparse {
       nrm += std::norm(v);
     return std::sqrt(nrm);
   }
+
   template <typename F>
   Tensor<F> Tensor<F>::conjugate() const {
     Tensor<F> conj(dim);
-    for (typename ConcurrentHashMap<std::vector<UInt>, F>::const_iterator it = data.begin();
-         it != data.end(); it++) {
+    for (typename ConcurrentHashMap<std::vector<UInt>, F>::const_iterator it = data.begin(); it != data.end(); it++) {
       conj.data.insert({it->first, it->second});
     }
     return conj;
@@ -230,8 +225,7 @@ namespace TNT::Tensor::Sparse {
   template <>
   Tensor<std::complex<double>> Tensor<std::complex<double>>::conjugate() const {
     Tensor<std::complex<double>> conj(dim);
-    for (typename ConcurrentHashMap<std::vector<UInt>, std::complex<double>>::const_iterator it =
-             data.begin();
+    for (typename ConcurrentHashMap<std::vector<UInt>, std::complex<double>>::const_iterator it = data.begin();
          it != data.end(); it++) {
       conj.data.insert({it->first, std::conj(it->second)});
     }
@@ -245,8 +239,7 @@ namespace TNT::Tensor::Sparse {
     for (uint i = 0; i < dim.size(); i++)
       tdim[i] = dim[tidx[i]];
     Tensor<F> trans(tdim);
-    for (typename ConcurrentHashMap<std::vector<UInt>, F>::const_iterator it = data.begin();
-         it != data.end(); it++) {
+    for (typename ConcurrentHashMap<std::vector<UInt>, F>::const_iterator it = data.begin(); it != data.end(); it++) {
       std::vector<UInt> idx(dim.size());
       for (uint i = 0; i < dim.size(); i++)
         idx[i] = it->first[tidx[i]];
@@ -255,8 +248,7 @@ namespace TNT::Tensor::Sparse {
     return trans;
   }
   template <typename F>
-  Tensor<F> Tensor<F>::matricize(const std::vector<UInt> &idx_r,
-                                 const std::vector<UInt> &idx_c) const {
+  Tensor<F> Tensor<F>::matricize(const std::vector<UInt> &idx_r, const std::vector<UInt> &idx_c) const {
     assert(idx_r.size() + idx_c.size() == dim.size());
 
     UInt dim_r, dim_c;
@@ -277,8 +269,7 @@ namespace TNT::Tensor::Sparse {
     }
     Tensor<F> mat({dim_r, dim_c});
 
-    for (typename ConcurrentHashMap<std::vector<UInt>, F>::const_iterator it = data.begin();
-         it != data.end(); it++) {
+    for (typename ConcurrentHashMap<std::vector<UInt>, F>::const_iterator it = data.begin(); it != data.end(); it++) {
       std::vector<UInt> idx{0, 0};
       for (uint i = 0; i < idx_r.size(); i++)
         idx[0] += it->first[idx_r[i]] * stride_r[i];
@@ -293,8 +284,7 @@ namespace TNT::Tensor::Sparse {
   template <typename F>
   Tensor<F> &Tensor<F>::purge(const double &eps) {
     std::vector<std::vector<UInt>> idxs;
-    for (typename ConcurrentHashMap<std::vector<UInt>, F>::const_iterator it = data.begin();
-         it != data.end(); it++) {
+    for (typename ConcurrentHashMap<std::vector<UInt>, F>::const_iterator it = data.begin(); it != data.end(); it++) {
       if ((std::abs(it->second) <= eps))
         idxs.push_back(it->first);
     }
@@ -304,11 +294,9 @@ namespace TNT::Tensor::Sparse {
   }
 
   template <typename F>
-  std::unordered_map<std::vector<UInt>, F, HashValue<std::vector<UInt>>>
-  Tensor<F>::elements() const {
+  std::unordered_map<std::vector<UInt>, F, HashValue<std::vector<UInt>>> Tensor<F>::elements() const {
     std::unordered_map<std::vector<UInt>, F, HashValue<std::vector<UInt>>> result;
-    for (typename ConcurrentHashMap<std::vector<UInt>, F>::const_iterator it = data.begin();
-         it != data.end(); it++) {
+    for (typename ConcurrentHashMap<std::vector<UInt>, F>::const_iterator it = data.begin(); it != data.end(); it++) {
       result.emplace(it->first, it->second);
     }
     return result;
@@ -317,8 +305,7 @@ namespace TNT::Tensor::Sparse {
   template <typename F>
   std::map<std::vector<UInt>, F> Tensor<F>::elements2() const {
     std::map<std::vector<UInt>, F> result;
-    for (typename ConcurrentHashMap<std::vector<UInt>, F>::const_iterator it = data.begin();
-         it != data.end(); it++) {
+    for (typename ConcurrentHashMap<std::vector<UInt>, F>::const_iterator it = data.begin(); it != data.end(); it++) {
       result.emplace(it->first, it->second);
     }
     return result;
@@ -327,8 +314,7 @@ namespace TNT::Tensor::Sparse {
   template <typename F>
   std::map<UInt, F> Tensor<F>::elementsL() const {
     std::map<UInt, F> result;
-    for (typename ConcurrentHashMap<std::vector<UInt>, F>::const_iterator it = data.begin();
-         it != data.end(); it++) {
+    for (typename ConcurrentHashMap<std::vector<UInt>, F>::const_iterator it = data.begin(); it != data.end(); it++) {
       result.emplace(convertIndex(stride, it->first), it->second);
     }
     return result;
@@ -346,8 +332,7 @@ namespace TNT::Tensor::Sparse {
 
   template <typename F>
   const Tensor<F> &Tensor<F>::writeTo(F *target, const double &eps) const {
-    for (typename ConcurrentHashMap<std::vector<UInt>, F>::const_iterator it = data.begin();
-         it != data.end(); it++) {
+    for (typename ConcurrentHashMap<std::vector<UInt>, F>::const_iterator it = data.begin(); it != data.end(); it++) {
       target[convertIndex(stride, it->first)] = it->second;
     }
     return *this;
@@ -393,8 +378,8 @@ namespace TNT::Tensor::Sparse {
       std::sort(idx[curr].begin(), idx[curr].end());
 
       if (i != tc.tensors.size() - 1) {
-        std::set_symmetric_difference(idx[prev].begin(), idx[prev].end(), idx[curr].begin(),
-                                      idx[curr].end(), std::back_inserter(result_idx));
+	std::set_symmetric_difference(idx[prev].begin(), idx[prev].end(), idx[curr].begin(), idx[curr].end(),
+				      std::back_inserter(result_idx));
 
         result_sub = Util::concat(result_idx, ",");
       } else {
@@ -460,8 +445,7 @@ namespace TNT::Tensor::Sparse {
       std::sort(subs[n].begin(), subs[n].end());
     }
     // Find SVD subscript as the intersection
-    std::set_intersection(subs[0].begin(), subs[0].end(), subs[1].begin(), subs[1].end(),
-                          std::back_inserter(svd_sub));
+    std::set_intersection(subs[0].begin(), subs[0].end(), subs[1].begin(), subs[1].end(), std::back_inserter(svd_sub));
     // Reread tensor subscripts
     for (UInt n = 0; n < 2; n++)
       subs[n] = Util::split(subscript[n], ",");
@@ -545,8 +529,7 @@ namespace TNT::Tensor::Sparse {
       // Find position of svd subscript in subs[n]
       auto iter = std::find(subs[n].begin(), subs[n].end(), svd_sub[0]);
       // insert idx=links[n].size() at position
-      links_tr[n].insert(links_tr[n].begin() + std::distance(subs[n].begin(), iter),
-                         links[n].size());
+      links_tr[n].insert(links_tr[n].begin() + std::distance(subs[n].begin(), iter), links[n].size());
     }
 
     std::array<std::unique_ptr<F[]>, 2> buffer;
@@ -575,8 +558,7 @@ namespace TNT::Tensor::Sparse {
   Tensor<F> Tensor<F>::operator+(const Tensor<F> &M) const {
     Tensor<F> T = M;
 
-    for (typename ConcurrentHashMap<std::vector<UInt>, F>::const_iterator it = data.begin();
-         it != data.end(); it++) {
+    for (typename ConcurrentHashMap<std::vector<UInt>, F>::const_iterator it = data.begin(); it != data.end(); it++) {
       typename ConcurrentHashMap<std::vector<UInt>, F>::accessor t;
       T.data.insert(t, it->first);
       t->second += it->second;
@@ -585,11 +567,43 @@ namespace TNT::Tensor::Sparse {
   }
 
   template <typename F>
+  Tensor<F> &Tensor<F>::operator+=(const Tensor<F> &M) {
+
+    for (typename ConcurrentHashMap<std::vector<UInt>, F>::const_iterator it = M.data.begin(); it != M.data.end();
+	 it++) {
+      typename ConcurrentHashMap<std::vector<UInt>, F>::accessor t;
+      data.insert(t, it->first);
+      t->second += it->second;
+    }
+    return *this;
+  }
+  template <typename F>
+  Tensor<F> &Tensor<F>::operator+=(const std::tuple<std::vector<UInt>, std::optional<F>> &c) {
+    if (std::get<1>(c)) {
+      assert(std::get<0>(c).size() == dim.size());
+      typename ConcurrentHashMap<std::vector<UInt>, F>::accessor t;
+      data.insert(t, std::get<0>(c));
+      t->second += *std::get<1>(c);
+    }
+    return *this;
+  }
+
+  template <typename F>
+  Tensor<F> Tensor<F>::operator-(const Tensor<F> &M) const {
+    Tensor<F> T = -M;
+
+    for (typename ConcurrentHashMap<std::vector<UInt>, F>::const_iterator it = data.begin(); it != data.end(); it++) {
+      typename ConcurrentHashMap<std::vector<UInt>, F>::accessor t;
+      T.data.insert(t, it->first);
+      t->second += it->second;
+    }
+    return T;
+  }
+  template <typename F>
   Tensor<F> Tensor<F>::operator-() const {
     Tensor<F> T(dim);
 
-    for (typename ConcurrentHashMap<std::vector<UInt>, F>::const_iterator it = data.begin();
-         it != data.end(); it++) {
+    for (typename ConcurrentHashMap<std::vector<UInt>, F>::const_iterator it = data.begin(); it != data.end(); it++) {
       typename ConcurrentHashMap<std::vector<UInt>, F>::accessor t;
       T.data.insert(t, it->first);
       t->second = -it->second;
@@ -600,8 +614,7 @@ namespace TNT::Tensor::Sparse {
   template <typename F>
   Tensor<F> Tensor<F>::operator*(const F &c) const {
     Tensor<F> M(dim);
-    for (typename ConcurrentHashMap<std::vector<UInt>, F>::const_iterator it = data.begin();
-         it != data.end(); it++) {
+    for (typename ConcurrentHashMap<std::vector<UInt>, F>::const_iterator it = data.begin(); it != data.end(); it++) {
       typename ConcurrentHashMap<std::vector<UInt>, F>::accessor t;
       M.data.insert(t, it->first);
       t->second = it->second * c;
@@ -610,8 +623,7 @@ namespace TNT::Tensor::Sparse {
   }
 
   template <typename F>
-  std::vector<std::array<Tensor<F>, 2>> kronecker_SVD(const Tensor<F> &T, UInt nsv,
-                                                      const double tolerance) {
+  std::vector<std::array<Tensor<F>, 2>> kronecker_SVD(const Tensor<F> &T, UInt nsv, const double tolerance) {
     std::vector<std::array<Tensor<F>, 2>> uv(nsv);
 
     // M = A x B
@@ -627,9 +639,8 @@ namespace TNT::Tensor::Sparse {
     M.writeTo(data.get());
     double aNorm = M.norm2();
 
-    int nvecs =
-        Algebra::tensorSVD(dim, {{{0}, {1}}}, svals.get(), svecs.get(), data.get(),
-                           Algebra::Options(nsv, tolerance, aNorm, Algebra::Target::largest));
+    int nvecs = Algebra::tensorSVD(dim, {{{0}, {1}}}, svals.get(), svecs.get(), data.get(),
+				   Algebra::Options(nsv, tolerance, aNorm, Algebra::Target::largest));
 
     uint dimH = T.dimension()[0];
     for (uint n = 0; n < nvecs; n++) {
@@ -640,8 +651,7 @@ namespace TNT::Tensor::Sparse {
         uv[n][0] <<= {{row / dimH, row % dimH}, svecs[n * dim[0] + row] * sqrt(svals[n])};
       // uv[n][0] <<= {{row%dimH,row/dimH},svecs[n*dim[0]+row]*sqrt(svals[n])};
       for (unsigned int row = 0; row < dim[1]; row++)
-        uv[n][1] <<=
-            {{row / dimH, row % dimH}, svecs[nvecs * dim[0] + n * dim[1] + row] * sqrt(svals[n])};
+	uv[n][1] <<= {{row / dimH, row % dimH}, svecs[nvecs * dim[0] + n * dim[1] + row] * sqrt(svals[n])};
       // uv[n][1] <<= {{row%dimH,row/dimH},svecs[nvecs*dim[0]+
       // n*dim[1]+row]*sqrt(svals[n])};
       uv[n][0].purge(tolerance);
@@ -689,22 +699,17 @@ template class TNT::Tensor::Sparse::Tensor<std::complex<double>>;
 template std::vector<std::array<TNT::Tensor::Sparse::Tensor<double>, 2>>
 TNT::Tensor::Sparse::kronecker_SVD<double>(const Tensor<double> &, UInt, const double);
 template std::vector<std::array<TNT::Tensor::Sparse::Tensor<std::complex<double>>, 2>>
-TNT::Tensor::Sparse::kronecker_SVD<std::complex<double>>(const Tensor<std::complex<double>> &, UInt,
-                                                         const double);
+TNT::Tensor::Sparse::kronecker_SVD<std::complex<double>>(const Tensor<std::complex<double>> &, UInt, const double);
 
-template int TNT::Tensor::Sparse::writeToFile<double>(const Tensor<double> &tensor,
-                                                      const std::string &filename,
+template int TNT::Tensor::Sparse::writeToFile<double>(const Tensor<double> &tensor, const std::string &filename,
                                                       const std::string &path);
-template int
-TNT::Tensor::Sparse::writeToFile<std::complex<double>>(const Tensor<std::complex<double>> &tensor,
-                                                       const std::string &filename,
-                                                       const std::string &path);
+template int TNT::Tensor::Sparse::writeToFile<std::complex<double>>(const Tensor<std::complex<double>> &tensor,
+								    const std::string &filename,
+								    const std::string &path);
 
 template TNT::Tensor::Sparse::Tensor<double> TNT::Tensor::Sparse::IdentityMatrix(unsigned int d);
-template TNT::Tensor::Sparse::Tensor<std::complex<double>>
-TNT::Tensor::Sparse::IdentityMatrix(unsigned int d);
+template TNT::Tensor::Sparse::Tensor<std::complex<double>> TNT::Tensor::Sparse::IdentityMatrix(unsigned int d);
 
-template std::ostream &TNT::Tensor::Sparse::operator<<<double>(std::ostream &out,
-                                                               const Tensor<double> &T);
-template std::ostream &TNT::Tensor::Sparse::
-operator<<<std::complex<double>>(std::ostream &out, const Tensor<std::complex<double>> &T);
+template std::ostream &TNT::Tensor::Sparse::operator<<<double>(std::ostream &out, const Tensor<double> &T);
+template std::ostream &TNT::Tensor::Sparse::operator<<<std::complex<double>>(std::ostream &out,
+									     const Tensor<std::complex<double>> &T);

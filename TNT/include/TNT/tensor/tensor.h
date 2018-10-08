@@ -72,6 +72,7 @@ namespace TNT::Tensor {
     Tensor<F> &operator*=(const Tensor<F> &M);
 
     Tensor<F> operator+(const Tensor<F> &M) const;
+    Tensor<F> operator-(const Tensor<F> &M) const;
     Tensor<F> operator-() const;
     Tensor<F> operator*(const F &c) const;
     Contraction<F> operator*(const Tensor<F> &rhs) const;
@@ -95,6 +96,7 @@ namespace TNT::Tensor {
     F operator[](const UInt i) const { return data[i]; }
 
     std::vector<UInt> dimension() const { return dim; }
+    std::vector<UInt> strides() const { return stride; }
 
     UInt dimension(const std::string &s) const;
 

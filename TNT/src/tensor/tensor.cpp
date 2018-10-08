@@ -243,6 +243,15 @@ namespace TNT::Tensor {
   }
 
   template <typename F>
+  Tensor<F> Tensor<F>::operator-(const Tensor<F> &M) const {
+    Tensor<F> T(dim);
+    for (UInt i = 0; i < totalDim; i++) {
+      T.data[i] = data[i] - M.data[i];
+    }
+    return std::move(T);
+  }
+
+  template <typename F>
   Tensor<F> Tensor<F>::operator-() const {
     Tensor<F> T(dim);
     for (UInt i = 0; i < totalDim; i++) {
@@ -703,11 +712,8 @@ namespace TNT::Tensor {
     out << ")(" << T.size() << "):\n";
     out << "{";
     for (int i = 0; i < T.size(); i++) {
-      // auto v = (std::abs(T[i]) > 10e-4) ? T[i] : 0.0;
-      // out << v << ",";
-      if (std::abs(T[i]) > 10e-12) {
-        std::cout << i << ":" << T[i] << ",";
-      }
+      if (std::abs(T[i]) > 10e-12)
+	std::cout << i << ":" << T[i] << ",";
     }
     out << "}";
     return out;
