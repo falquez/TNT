@@ -41,8 +41,7 @@ namespace TNT::Configuration {
   }
 
   template <typename F>
-  Configuration<F>::Configuration(const std::string &config_file)
-      : config_file{config_file}, parameters{config_file} {
+  Configuration<F>::Configuration(const std::string &config_file) : config_file{config_file}, parameters{config_file} {
     nlohmann::json j;
     std::ifstream f(config_file);
     f >> j;
@@ -58,7 +57,19 @@ namespace TNT::Configuration {
     // Initialize hamiltonian
     auto h_object = j["hamiltonian"];
     hamiltonian.dim = h_object["dim"];
-    if (h_object.find("mpo") != h_object.end()) {
+    auto h_operator = h_object["operators"];
+    if (h_operator.find("single") != h_operator.end()) {
+      hamiltonian.single_site = h_operator["single"].get<std::string>();
+    }
+    if (h_operator.find("nearest") != h_operator.end()) {
+      std::vector<nlohmann::json> pair_array = h_operator["nearest"];
+      for (const auto &pair : pair_array) {
+	std::vector<std::string> ops = pair;
+	hamiltonian.nearest.push_back({ops[0], ops[1]});
+      }
+    }
+    // hamiltonian.dim = h_object["dim"];
+    /*if (h_object.find("mpo") != h_object.end()) {
       MPO::MPO mpo;
       auto mpo_object = h_object["mpo"];
       std::vector<nlohmann::json> block_array = mpo_object["blocks"];
@@ -75,31 +86,46 @@ namespace TNT::Configuration {
         mpo.blocks.push_back(block);
       }
       hamiltonian.mpo = mpo;
-    }
+  }*/
 
+    // Initialize constraints
+    std::map<std::string, nlohmann::json> cn_object = j["constraints"];
+    for (const auto &[name, obj] : cn_object) {
+      Constraint cnt;
+      cnt.name = name;
+      cnt.expression = obj["operator"];
+      cnt.weight = obj["weight"];
+      cnt.site = 0;
+      if (obj.find("site") != obj.end()) {
+	cnt.site = obj["site"];
+      }
+      // constraints.push_back(cnt);
+      constraints.emplace(name, cnt);
+    }
     // Initialize operators
     std::map<std::string, nlohmann::json> op_object = j["operators"];
     for (const auto &[name, obj] : op_object) {
       Operator<F> op(name);
       if (obj.find("rows") != obj.end()) {
-        std::vector<nlohmann::json> rows = obj["rows"];
-        op.rows = read_rows<F>(rows);
+	std::vector<nlohmann::json> rows = obj["rows"];
+	op.rows = read_rows<F>(rows);
       } else {
-        op.file = obj["file"];
-        op.path = obj["path"];
+	op.file = obj["file"];
+	op.path = obj["path"];
 
-        if (obj.find("sparse") != obj.end())
-          op.sparse = true;
-        Storage::Storage storage(op.file, Storage::FileMode::ReadOnly);
-        Storage::Data::Metadata<unsigned int> size{"size", 0};
-        storage.read(op.path, size);
-        op.size = size.value;
+	if (obj.find("sparse") != obj.end())
+	  op.sparse = true;
+	Storage::Storage storage(op.file, Storage::FileMode::ReadOnly);
+	Storage::Data::Metadata<unsigned int> size{"size", 0};
+	storage.read(op.path, size);
+	op.size = size.value;
       }
+      // operators.push_back(op);
       operators.emplace(name, op);
     }
 
     observables = Observables<F>(config_file, operators);
-  }
+  } // namespace TNT::Configuration
 } // namespace TNT::Configuration
 
 template class TNT::Configuration::Configuration<double>;

@@ -34,8 +34,7 @@ namespace TNT::Configuration {
 
   public:
     Observables() {}
-    Observables(const std::string &config_file,
-                const std::map<std::string, Operator<F>> &operators);
+    Observables(const std::string &config_file, const std::map<std::string, Operator<F>> &operators);
 
     const TNT::Operator::Observable<F> &operator()(std::string name) const;
     Iterator<TNT::Operator::Observable<F>> iterate() const;

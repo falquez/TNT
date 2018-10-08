@@ -19,12 +19,17 @@
 #ifndef _TNT_CONFIGURATION_HAMILTONIAN_H
 #define _TNT_CONFIGURATION_HAMILTONIAN_H
 
+#include <array>
 #include <optional>
 #include <string>
 #include <vector>
 
 namespace TNT::Configuration {
+  enum class BoundaryCondition { Open, Periodic };
 
+  /*namespace Hamiltonian {
+    struct Operator {};
+  } // namespace Hamiltonian
   namespace MPO {
     struct Block {
       std::vector<unsigned int> position;
@@ -37,10 +42,18 @@ namespace TNT::Configuration {
       std::vector<Block> blocks;
     };
   } // namespace MPO
-
+*/
   struct Hamiltonian {
     unsigned int dim;
-    std::optional<MPO::MPO> mpo;
+    std::optional<std::string> single_site = {};
+    std::vector<std::array<std::string, 2>> nearest;
+  };
+
+  struct Constraint {
+    std::string name;
+    std::string expression;
+    double weight;
+    unsigned int site = 0;
   };
 
 } // namespace TNT::Configuration

@@ -58,8 +58,10 @@ namespace TNT::Configuration {
 
     Network network;
     Hamiltonian hamiltonian;
-    Observables<F> observables;
+    std::map<std::string, Constraint> constraints;
     std::map<std::string, Operator<F>> operators;
+
+    Observables<F> observables;
     Parameters parameters;
 
     bool restart = false;
