@@ -62,7 +62,7 @@ namespace TNT::Network::MPS::Sweep {
     double deltaEV = state.variance;
 
     bool converged = false;
-    if ((std::abs(deltaEV) < conv_tolerance) && (state.iteration > 2)) {
+    if ((std::abs(deltaEV) < conv_tolerance) && (state.iteration > length)) {
       converged = true;
     }
 
