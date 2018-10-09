@@ -13,8 +13,8 @@
     },
     "network": {
         "topology": "MPS",
-        "length": 10,
-        "max_bond_dim": 10
+        "length": 40,
+        "max_bond_dim": 12
     },
     "hamiltonian": {
         "dim": 6,
