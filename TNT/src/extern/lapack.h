@@ -19,19 +19,17 @@
 #ifndef _TNT_LAPACK_H
 #define _TNT_LAPACK_H
 
-#include <complex>
+//#include <complex>
 #define lapack_complex_double std::complex<double>
 
 #include <lapacke.h>
 
 namespace TNT::LAPACK {
   template <typename F>
-  lapack_int geqrf(lapack_int m, lapack_int n, F *a, lapack_int lda, F *tau,
-                   int matrix_layout = LAPACK_COL_MAJOR);
+  lapack_int geqrf(lapack_int m, lapack_int n, F *a, lapack_int lda, F *tau, int matrix_layout = LAPACK_COL_MAJOR);
 
   template <typename F>
-  lapack_int gelqf(lapack_int m, lapack_int n, F *a, lapack_int lda, F *tau,
-                   int matrix_layout = LAPACK_COL_MAJOR);
+  lapack_int gelqf(lapack_int m, lapack_int n, F *a, lapack_int lda, F *tau, int matrix_layout = LAPACK_COL_MAJOR);
 
   template <typename F>
   lapack_int ungqr(lapack_int m, lapack_int n, lapack_int k, F *a, lapack_int lda, F *tau,

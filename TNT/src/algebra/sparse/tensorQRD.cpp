@@ -16,17 +16,18 @@
  *  along with this program.  If not, see <http://www.gnu.org/licenses/>.
  */
 
-#include "../../extern/lapack.h"
-#include "../../util/util.h"
 #include "algebra.h"
+
+//#include "../../util/util.h"
+
+#include "../../extern/lapack.h"
 
 #include <hptt/hptt.h>
 
 namespace TNT::Algebra::Sparse {
 
   template <typename F>
-  int tensorQRD(const std::vector<UInt> &dim, const std::array<std::vector<UInt>, 2> &idx, F *data,
-                F *R) {
+  int tensorQRD(const std::vector<UInt> &dim, const std::array<std::vector<UInt>, 2> &idx, F *data, F *R) {
     int err = 0;
 
     std::vector<int> tr1(dim.size());
@@ -55,8 +56,8 @@ namespace TNT::Algebra::Sparse {
     std::unique_ptr<F[]> Q1 = std::make_unique<F[]>(dimM * dimN);
     std::unique_ptr<F[]> tau = std::make_unique<F[]>(dimN);
 
-    auto planQ1 = hptt::create_plan(tr1, tr1.size(), 1.0, data, dimQ1, {}, 0.0, Q1.get(), {},
-                                    hptt::ESTIMATE, Algebra::numThreads);
+    auto planQ1 = hptt::create_plan(tr1, tr1.size(), 1.0, data, dimQ1, {}, 0.0, Q1.get(), {}, hptt::ESTIMATE,
+				    Algebra::numThreads);
     planQ1->execute();
 
     // Find QR decomposition
@@ -70,8 +71,8 @@ namespace TNT::Algebra::Sparse {
     // Write Q in-place
     err = LAPACK::ungqr(dimM, dimN, dimN, Q1.get(), dimM, tau.get());
 
-    auto planQ2 = hptt::create_plan(tr2, tr2.size(), 1.0, Q1.get(), dimQ, {}, 0.0, data, {},
-                                    hptt::ESTIMATE, Algebra::numThreads);
+    auto planQ2 =
+	hptt::create_plan(tr2, tr2.size(), 1.0, Q1.get(), dimQ, {}, 0.0, data, {}, hptt::ESTIMATE, Algebra::numThreads);
     planQ2->execute();
 
     return err;
@@ -79,8 +80,8 @@ namespace TNT::Algebra::Sparse {
 } // namespace TNT::Algebra::Sparse
 
 template int TNT::Algebra::Sparse::tensorQRD<double>(const std::vector<UInt> &dim,
-                                                     const std::array<std::vector<UInt>, 2> &idx,
-                                                     double *data, double *R);
-template int TNT::Algebra::Sparse::tensorQRD<std::complex<double>>(
-    const std::vector<UInt> &dim, const std::array<std::vector<UInt>, 2> &idx,
-    std::complex<double> *data, std::complex<double> *R);
+						     const std::array<std::vector<UInt>, 2> &idx, double *data,
+						     double *R);
+template int TNT::Algebra::Sparse::tensorQRD<std::complex<double>>(const std::vector<UInt> &dim,
+								   const std::array<std::vector<UInt>, 2> &idx,
+								   std::complex<double> *data, std::complex<double> *R);
