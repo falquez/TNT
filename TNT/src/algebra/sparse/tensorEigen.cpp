@@ -133,9 +133,11 @@ namespace TNT::Algebra::Sparse {
 
     std::string tsub = sub[0] + "," + sub[1];
     T(tsub) = seq;
-    std::cout << "T.dataSize()=" << T.dataSize() << " T.size()=" << T.size() << std::endl;
+    if (options.verbosity > 0)
+      std::cout << "T.dataSize()=" << T.dataSize() << " T.size()=" << T.size() << std::endl;
     T.purge();
-    std::cout << "T.dataSize()=" << T.dataSize() << " T.size()=" << T.size() << std::endl;
+    if (options.verbosity > 0)
+      std::cout << "T.dataSize()=" << T.dataSize() << " T.size()=" << T.size() << std::endl;
 
     malloc_trim(0);
 
@@ -195,9 +197,10 @@ namespace TNT::Algebra::Sparse {
     }
 
     err = primme_set_method(PRIMME_DYNAMIC, &primme);
-    primme.printLevel = 4;
+    primme.printLevel = options.verbosity;
 
-    primme_display_params(primme);
+    if (options.verbosity > 0)
+      primme_display_params(primme);
     /* Call primme  */
     err = PRIMME::calculate_ewp_primme<F>(evals, evecs, rnorm.get(), &primme);
     int converged = primme.initSize;

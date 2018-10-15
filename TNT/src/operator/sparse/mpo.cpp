@@ -97,9 +97,9 @@ namespace TNT::Operator::Sparse {
     /*@TODO: generalize this */
     _dimW = +H.nearest.size() + 2;
 
-    std::cout << "Initializing Sparse::MPO";
-    std::cout << " length=" << _length << " dimH=" << _dimH << " dimW=" << _dimW;
-    std::cout << std::endl;
+    // std::cout << "Initializing Sparse::MPO";
+    // std::cout << " length=" << _length << " dimH=" << _dimH << " dimW=" << _dimW;
+    // std::cout << std::endl;
 
     W = std::vector<Tensor::Sparse::Tensor<F>>(_length);
     for (unsigned int l = 0; l < _length; l++) {

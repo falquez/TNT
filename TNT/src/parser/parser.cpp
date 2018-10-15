@@ -55,7 +55,7 @@ namespace TNT::Parser {
             o[{i, j}] = op.rows[i][j];
         O.emplace(name, o);
       } else if (op.sparse) {
-	std::cout << "Reading sparse OP " << op.name << " " << op.size << " " << op.sparse << std::endl;
+	// std::cout << "Reading sparse OP " << op.name << " " << op.size << " " << op.sparse << std::endl;
 	if (op.size > 1) {
 	  for (unsigned int i = 0; i < op.size; i++) {
 	    Tensor::Sparse::Tensor<double> o(op.file, op.path, i);
@@ -83,10 +83,6 @@ namespace TNT::Parser {
     for (unsigned int i = 0; i < dimH; i++)
       Id[{i, i}] = 1.0;
     O.emplace("Id", Id);
-
-    for (const auto &[name, op] : O) {
-      std::cout << "Read Operator " << name << "=" << op << std::endl;
-    }
   };
 
   template <>
@@ -131,7 +127,7 @@ namespace TNT::Parser {
   Tensor::Tensor<double> Parser<Tensor::Tensor<double>, double>::parse(const std::string &s, int pos) const {
     using F = double;
 
-    std::cout << "Parsing expression: " << s << std::endl;
+    // std::cout << "Parsing expression: " << s << std::endl;
     auto compiler = metl::makeCompiler<int, F, Tensor::Tensor<F>>();
     compiler.setOperatorPrecedence("*", 5);
     compiler.setOperatorPrecedence("+", 6);
@@ -167,7 +163,7 @@ namespace TNT::Parser {
   Tensor::Sparse::Tensor<double> Parser<Tensor::Sparse::Tensor<double>, double>::parse(const std::string &s,
 										       int pos) const {
     using F = double;
-    std::cout << "Parsing expression: " << s << std::endl;
+    // std::cout << "Parsing expression: " << s << std::endl;
 
     auto compiler = metl::makeCompiler<int, F, Tensor::Sparse::Tensor<F>>();
     compiler.setOperatorPrecedence("*", 5);
@@ -199,7 +195,7 @@ namespace TNT::Parser {
 
     auto res = compiler.build<Tensor::Sparse::Tensor<F>>(s)();
 
-    std::cout << "res=" << res << std::endl;
+    // std::cout << "res=" << res << std::endl;
 
     return res;
   }
