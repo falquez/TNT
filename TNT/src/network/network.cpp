@@ -38,13 +38,14 @@ namespace TNT::Network {
 
       iteration = j["iteration"];
       eigenvalue = j["eigenvalue"];
-
+      restarted = true;
     } else {
       j["iteration"] = iteration;
       j["eigenvalue"] = eigenvalue;
 
       std::ofstream f(filename);
       f << std::setw(4) << j << std::endl;
+      restarted = false;
     }
   }
 

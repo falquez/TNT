@@ -34,6 +34,7 @@ namespace TNT::Network {
     ULong length;
     double eigenvalue;
     double variance;
+    bool restarted;
     State(const ULong &iteration = 0) : iteration{iteration}, eigenvalue{0}, variance{0} {}
 
     State(const std::string &config_file, const bool restart = false);

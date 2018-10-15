@@ -33,6 +33,7 @@ namespace TNT::Configuration {
     std::ifstream f(config_file);
     f >> j;
 
+    restart = j["restart"];
     tolerances = j["tolerance"].get<std::map<std::string, double>>();
     directories = j["directories"].get<std::map<std::string, std::string>>();
 
