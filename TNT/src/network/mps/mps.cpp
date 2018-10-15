@@ -65,6 +65,8 @@ namespace TNT::Network::MPS {
     conv_tolerance = conf.tolerance("convergence") * length;
 
     _A = std::vector<Tensor::Tensor<F>>(length);
+    //_LC = std::vector<Tensor::Tensor<F>>(length + 1);
+    //_RC = std::vector<Tensor::Tensor<F>>(length + 1);
 
     if (conf.restart) {
       throw std::invalid_argument("Restart not implemented");
@@ -90,6 +92,25 @@ namespace TNT::Network::MPS {
         _A[l].initialize(2);
         _A[l].normalize_QRD(1);
       }
+
+      /*
+      // Initialize Right Contractions
+      // std::cout << "Initializing Right Contractions" << std::endl;
+      _RC[L] = Tensor::Tensor<F>({1, 1, 1}, 1.0);
+      for (unsigned int l = L - 1; l >= i_l; l--) {
+        Tensor::Tensor DW(W[l + 1]);
+        RC[l]("b1,a1,a1'") =
+            A[n][l + 1]("s,a1,a2") * DW("b1,b2,s,s'") * RC[l + 1]("b2,a2,a2'") * A[n][l + 1].conjugate()("s',a1',a2'");
+      }
+
+      // Initialize Left Contractions
+      // std::cout << "Initializing Left Contractions" << std::endl;
+      LC[1] = Tensor::Tensor<NumericalType>({1, 1, 1}, 1.0);
+      for (unsigned int l = 1; l < i_r; l++) {
+        Tensor::Tensor DW(W[l]);
+        LC[l + 1]("b2,a2,a2'") =
+            A[n][l]("s,a1,a2") * DW("b1,b2,s,s'") * LC[l]("b1,a1,a1'") * A[n][l].conjugate()("s',a1',a2'");
+      }*/
 
       // for(ULong l=0;l<length;l++){
       // Tensor::writeToFile(_A[l],
@@ -225,20 +246,20 @@ namespace TNT::Network::MPS {
       std::cout << "Measuring site observable " << O.name << " O = " << O[1] << std::endl;
       for (unsigned int l1 = 0; l1 < length; l1++) {
 
-	std::array<Tensor::Tensor<F>, 2> T;
-	T[0] = Tensor::Tensor<F>({1, 1}, 1.0);
+        std::array<Tensor::Tensor<F>, 2> T;
+        T[0] = Tensor::Tensor<F>({1, 1}, 1.0);
 
-	for (unsigned int l = 0; l < length; l++) {
-	  unsigned int curr = l % 2;
-	  unsigned int next = (l + 1) % 2;
-	  Tensor::Tensor<F> _Ac = _A[l].conjugate();
-	  if (l == l1) {
-	    T[next]("a2,a2'") = T[curr]("a1,a1'") * _A[l]("s1,a1,a2") * O[1]("s1,s2") * _Ac("s2,a1',a2'");
-	  } else {
-	    T[next]("a2,a2'") = T[curr]("a1,a1'") * _A[l]("s1,a1,a2") * _Ac("s1,a1',a2'");
-	  }
-	}
-	result.push_back({std::vector<ULong>{l1}, T[length % 2][0]});
+        for (unsigned int l = 0; l < length; l++) {
+          unsigned int curr = l % 2;
+          unsigned int next = (l + 1) % 2;
+          Tensor::Tensor<F> _Ac = _A[l].conjugate();
+          if (l == l1) {
+            T[next]("a2,a2'") = T[curr]("a1,a1'") * _A[l]("s1,a1,a2") * O[1]("s1,s2") * _Ac("s2,a1',a2'");
+          } else {
+            T[next]("a2,a2'") = T[curr]("a1,a1'") * _A[l]("s1,a1,a2") * _Ac("s1,a1',a2'");
+          }
+        }
+        result.push_back({std::vector<ULong>{l1}, T[length % 2][0]});
       }
       break;
     case Operator::ObservableType::Correlation:

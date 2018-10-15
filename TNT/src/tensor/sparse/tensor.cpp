@@ -59,7 +59,7 @@ namespace TNT::Tensor::Sparse {
     }
 
     std::sort(data.begin(), data.end(),
-	      [](Storage::Data::SparseL<F> a, Storage::Data::SparseL<F> b) { return a.idx < b.idx; });
+              [](Storage::Data::SparseL<F> a, Storage::Data::SparseL<F> b) { return a.idx < b.idx; });
     storage.create_group(path);
     storage.create(path, dims);
 
@@ -339,6 +339,24 @@ namespace TNT::Tensor::Sparse {
   }
 
   template <typename F>
+  const Tensor<F> &Tensor<F>::addTo(F *target, const F alpha, const double &eps) const {
+    for (typename ConcurrentHashMap<std::vector<UInt>, F>::const_iterator it = data.begin(); it != data.end(); it++) {
+      target[convertIndex(stride, it->first)] = alpha * it->second;
+    }
+    return *this;
+  }
+
+  template <typename F>
+  Tensor<F> &Tensor<F>::operator=(const Tensor<F> &t) {
+    data = t.data;
+    dim = t.dim;
+    stride = t.stride;
+    totalDim = t.totalDim;
+
+    return *this;
+  }
+
+  template <typename F>
   Tensor<F> &Tensor<F>::operator=(const Contraction<F> &tc) {
     int err = 0;
     int prev = 0, curr = 0;
@@ -378,8 +396,8 @@ namespace TNT::Tensor::Sparse {
       std::sort(idx[curr].begin(), idx[curr].end());
 
       if (i != tc.tensors.size() - 1) {
-	std::set_symmetric_difference(idx[prev].begin(), idx[prev].end(), idx[curr].begin(), idx[curr].end(),
-				      std::back_inserter(result_idx));
+        std::set_symmetric_difference(idx[prev].begin(), idx[prev].end(), idx[curr].begin(), idx[curr].end(),
+                                      std::back_inserter(result_idx));
 
         result_sub = Util::concat(result_idx, ",");
       } else {
@@ -570,7 +588,7 @@ namespace TNT::Tensor::Sparse {
   Tensor<F> &Tensor<F>::operator+=(const Tensor<F> &M) {
 
     for (typename ConcurrentHashMap<std::vector<UInt>, F>::const_iterator it = M.data.begin(); it != M.data.end();
-	 it++) {
+         it++) {
       typename ConcurrentHashMap<std::vector<UInt>, F>::accessor t;
       data.insert(t, it->first);
       t->second += it->second;
@@ -640,7 +658,7 @@ namespace TNT::Tensor::Sparse {
     double aNorm = M.norm2();
 
     int nvecs = Algebra::tensorSVD(dim, {{{0}, {1}}}, svals.get(), svecs.get(), data.get(),
-				   Algebra::Options(nsv, tolerance, aNorm, Algebra::Target::largest));
+                                   Algebra::Options(nsv, tolerance, aNorm, Algebra::Target::largest));
 
     uint dimH = T.dimension()[0];
     for (uint n = 0; n < nvecs; n++) {
@@ -651,7 +669,7 @@ namespace TNT::Tensor::Sparse {
         uv[n][0] <<= {{row / dimH, row % dimH}, svecs[n * dim[0] + row] * sqrt(svals[n])};
       // uv[n][0] <<= {{row%dimH,row/dimH},svecs[n*dim[0]+row]*sqrt(svals[n])};
       for (unsigned int row = 0; row < dim[1]; row++)
-	uv[n][1] <<= {{row / dimH, row % dimH}, svecs[nvecs * dim[0] + n * dim[1] + row] * sqrt(svals[n])};
+        uv[n][1] <<= {{row / dimH, row % dimH}, svecs[nvecs * dim[0] + n * dim[1] + row] * sqrt(svals[n])};
       // uv[n][1] <<= {{row%dimH,row/dimH},svecs[nvecs*dim[0]+
       // n*dim[1]+row]*sqrt(svals[n])};
       uv[n][0].purge(tolerance);
@@ -704,12 +722,12 @@ TNT::Tensor::Sparse::kronecker_SVD<std::complex<double>>(const Tensor<std::compl
 template int TNT::Tensor::Sparse::writeToFile<double>(const Tensor<double> &tensor, const std::string &filename,
                                                       const std::string &path);
 template int TNT::Tensor::Sparse::writeToFile<std::complex<double>>(const Tensor<std::complex<double>> &tensor,
-								    const std::string &filename,
-								    const std::string &path);
+                                                                    const std::string &filename,
+                                                                    const std::string &path);
 
 template TNT::Tensor::Sparse::Tensor<double> TNT::Tensor::Sparse::IdentityMatrix(unsigned int d);
 template TNT::Tensor::Sparse::Tensor<std::complex<double>> TNT::Tensor::Sparse::IdentityMatrix(unsigned int d);
 
 template std::ostream &TNT::Tensor::Sparse::operator<<<double>(std::ostream &out, const Tensor<double> &T);
 template std::ostream &TNT::Tensor::Sparse::operator<<<std::complex<double>>(std::ostream &out,
-									     const Tensor<std::complex<double>> &T);
+                                                                             const Tensor<std::complex<double>> &T);

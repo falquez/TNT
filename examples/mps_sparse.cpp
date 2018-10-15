@@ -53,6 +53,9 @@ int main(int argc, char **argv) {
 
   // Read configuration
   const Configuration::Configuration<NumericalType> config(config_file);
+
+  for (const auto &[name, cr] : config.constraints)
+    std::cout << "Constraint " << cr.name << " site=" << cr.site << std::endl;
   // const auto observables = config.observables;
   const auto parameters = config.parameters;
 
@@ -74,13 +77,16 @@ int main(int argc, char **argv) {
 
     for (unsigned int n = 0; n < n_max; n++) {
 
-      auto constraints = config.constraints;
-      if (n == 0)
-	constraints.clear();
-      const Operator::Sparse::MPO<NumericalType> W(config, params, constraints);
+      const Operator::Sparse::MPO<NumericalType> W(config, params);
       const auto W2 = W * W;
 
       std::cout << "W =" << W << std::endl;
+
+      const std::vector<Operator::Sparse::MPO<NumericalType>> Cr =
+          n >= 0 ? Operator::Sparse::Constraints<NumericalType>(config, params)
+                 : std::vector<Operator::Sparse::MPO<NumericalType>>{};
+      for (const auto cr : Cr)
+        std::cout << "cr =" << cr << std::endl;
 
       // Create new MPS
       A.push_back(Network::MPS::MPS<NumericalType>(config));
@@ -102,7 +108,8 @@ int main(int argc, char **argv) {
       // std::cout << "Reading position i=" << state.iteration << " i_l=" << i_l << " i_r=" << i_r;
       // std::cout << " i_dir=" << (i_dir == Network::MPS::Sweep::Direction::Right ? "r" : "l") << std::endl;
       // Projection Operators
-      std::vector<Tensor::Projector<NumericalType>> P(n);
+      std::vector<Tensor::TensorScalar<NumericalType>> Pr(n);
+      std::vector<Tensor::Sparse::TensorConstraint<NumericalType>> X(Cr.size());
 
       // Right and Left Contractions
       // 1 and L are boundary sites
@@ -127,7 +134,30 @@ int main(int argc, char **argv) {
             A[n][l]("s,a1,a2") * DW("b1,b2,s,s'") * LC[l]("b1,a1,a1'") * A[n][l].conjugate()("s',a1',a2'");
       }
 
+      // Right and Left Contractions
+      // 1 and L are boundary sites
+      std::vector<Tensor::Tensor<NumericalType>> CLC(L + 1);
+      std::vector<Tensor::Tensor<NumericalType>> CRC(L + 1);
+      // Initialize Right Contractions
+      // std::cout << "Initializing Right Contractions" << std::endl;
+      CRC[L] = Tensor::Tensor<NumericalType>({1, 1, 1}, 1.0);
+      for (unsigned int l = L - 1; l >= i_l; l--) {
+        Tensor::Tensor DW(Cr[0][l + 1]);
+        CRC[l]("b1,a1,a1'") =
+            A[n][l + 1]("s,a1,a2") * DW("b1,b2,s,s'") * CRC[l + 1]("b2,a2,a2'") * A[n][l + 1].conjugate()("s',a1',a2'");
+      }
+
+      // Initialize Left Contractions
+      // std::cout << "Initializing Left Contractions" << std::endl;
+      CLC[1] = Tensor::Tensor<NumericalType>({1, 1, 1}, 1.0);
+      for (unsigned int l = 1; l < i_r; l++) {
+        Tensor::Tensor DW(Cr[0][l]);
+        CLC[l + 1]("b2,a2,a2'") =
+            A[n][l]("s,a1,a2") * DW("b1,b2,s,s'") * CLC[l]("b1,a1,a1'") * A[n][l].conjugate()("s',a1',a2'");
+      }
       // Start sweep loop
+      NumericalType mu = 0.0;
+      NumericalType alpha = 0.000001;
       for (const auto [l, r, dir] : A[n].sweep(state)) {
         auto LW = LC[l].sparse();
         auto RW = RC[r].sparse();
@@ -137,7 +167,19 @@ int main(int argc, char **argv) {
 
         // Calculate Projection Operators
         for (unsigned int n_i = 0; n_i < n; n_i++)
-          P[n_i] = {E[n_i], A[n_i](A[n], {l, r})};
+          Pr[n_i] = {A[n_i](A[n], {l, r}), -E[n_i]};
+
+        for (unsigned int c_i = 0; c_i < Cr.size(); c_i++) {
+          auto CLW = CLC[l].sparse();
+          auto CRW = CRC[r].sparse();
+          double N = A[n](Cr[0]);
+          Tensor::Sparse::Tensor<NumericalType> C;
+          C("s1,s3,a1,a2,s1',s3',a1',a2'") =
+              CLW("b1,a1,a1'") * Cr[c_i][l]("b1,b2,s1,s1'") * Cr[c_i][r]("b2,b3,s3,s3'") * CRW("b3,a2,a2'");
+          X[c_i] = {C, mu, 10.0};
+        }
+
+        // std::cout << "C=" << C << std::endl;
 
         // Optimize A[n][l]*A[n][l+1]
         std::cout << "INFO: Optimize A[n][" << l << "]*A[n][" << r << "]"
@@ -145,7 +187,7 @@ int main(int argc, char **argv) {
         auto [ew, T] = ES({{"s1,s3,a1,a2", "s1',s3',a1',a2'"}})
                            .useInitial()
                            .setTolerance(config.tolerance("eigenvalue"))
-                           .optimize(A[n][l]("s1,a1,a") * A[n][r]("s3,a,a2"), P);
+                           .optimize(A[n][l]("s1,a1,a") * A[n][r]("s3,a,a2"), Pr, X);
 
         // @TODO: read max bond dimension from predefined vector, not current dim
         auto nsv = A[n][l]("s1,a1,a").dimension("a");
@@ -160,6 +202,8 @@ int main(int argc, char **argv) {
             T("s1,s3,a1,a2").SVD({{"s1,a1,a3", "s3,a3,a2"}}, {norm, nsv, config.tolerance("svd")});
 
         double E2 = A[n](W2);
+        double N = A[n](Cr[0]);
+        mu += alpha * (N - L);
         E[n] = ew;
         state.eigenvalue = ew;
         state.variance = (A[n](W2) - ew * ew) / (L * L);
@@ -172,13 +216,14 @@ int main(int argc, char **argv) {
         std::cout << "ev=" << state.eigenvalue << ", var=" << state.variance;
         std::cout.precision(std::numeric_limits<double>::max_digits10);
         std::cout << ", w=" << state.eigenvalue / (2 * L * params.at("x"));
-        std::cout << ", E2=" << E2 - ew * ew;
+        std::cout << ", N=" << N;
         // std::cout << ", d=" << (E[n] - E[0]) / (2 * std::sqrt(params.at("x")));
         std::cout << std::endl;
+        std::cout << "Total Charge=" << N << std::endl;
 
         // Store solutions to disk
-	Tensor::writeToFile(A[n][l], network_dir + format(l), "/Tensor");
-	Tensor::writeToFile(A[n][r], network_dir + format(r), "/Tensor");
+        Tensor::writeToFile(A[n][l], network_dir + format(l), "/Tensor");
+        Tensor::writeToFile(A[n][r], network_dir + format(r), "/Tensor");
 
         // Update left contraction for next iteration
         switch (dir) {
@@ -189,6 +234,18 @@ int main(int argc, char **argv) {
         case Network::MPS::Sweep::Direction::Left:
           RC[l]("b1,a1,a1'") =
               A[n][r]("s,a1,a2") * DW("b1,b2,s,s'") * RC[r]("b2,a2,a2'") * A[n][r].conjugate()("s',a1',a2'");
+          break;
+        }
+
+        auto CW = dir == Network::MPS::Sweep::Direction::Right ? Tensor::Tensor(Cr[0][l]) : Tensor::Tensor(Cr[0][r]);
+        switch (dir) {
+        case Network::MPS::Sweep::Direction::Right:
+          CLC[r]("b2,a2,a2'") =
+              A[n][l]("s,a1,a2") * CW("b1,b2,s,s'") * CLC[l]("b1,a1,a1'") * A[n][l].conjugate()("s',a1',a2'");
+          break;
+        case Network::MPS::Sweep::Direction::Left:
+          CRC[l]("b1,a1,a1'") =
+              A[n][r]("s,a1,a2") * CW("b1,b2,s,s'") * CRC[r]("b2,a2,a2'") * A[n][r].conjugate()("s',a1',a2'");
           break;
         }
       }

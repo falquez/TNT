@@ -37,7 +37,7 @@ namespace TNT::Tensor {
   class EigenSolver;
 
   template <typename F>
-  using Projector = std::tuple<F, Tensor<F>>;
+  using TensorScalar = std::tuple<Tensor<F>, F>;
 
   template <typename F>
   int writeToFile(const Tensor<F> &tensor, const std::string &filename, const std::string &path = "/Tensor");

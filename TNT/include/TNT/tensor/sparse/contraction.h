@@ -28,11 +28,19 @@ namespace TNT::Tensor::Sparse {
 
   template <typename F>
   class Contraction {
+  private:
+    F dotProduct() const;
+
   public:
     Contraction(const Tensor<F> &t);
 
     Contraction<F> &operator*(const Tensor<F> &t);
 
+    operator F() const {
+      // Currently support only dot products
+      assert(tensors.size() == 2);
+      return dotProduct();
+    }
     std::vector<std::vector<UInt>> dims;
     std::vector<std::vector<UInt>> strides;
     std::vector<std::string> subs;

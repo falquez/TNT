@@ -62,9 +62,9 @@ namespace TNT::Tensor::Sparse {
     std::tuple<F, Tensor<F>> optimize(const Contraction<F> &seq) const;
 
     std::tuple<F, TNT::Tensor::Tensor<F>> optimize(const TNT::Tensor::Tensor<F> &t1) const;
-    std::tuple<F, TNT::Tensor::Tensor<F>> optimize(const TNT::Tensor::Contraction<F> &seq1,
-                                                   const std::vector<TNT::Tensor::Projector<F>> &P = {},
-                                                   const std::vector<TNT::Tensor::Tensor<F>> &X = {}) const;
+    std::tuple<F, TNT::Tensor::Tensor<F>>
+    optimize(const TNT::Tensor::Contraction<F> &seq1, const std::vector<TNT::Tensor::TensorScalar<F>> &P = {},
+             const std::vector<TNT::Tensor::Sparse::TensorConstraint<F>> &X = {}) const;
   };
 } // namespace TNT::Tensor::Sparse
 

@@ -33,16 +33,15 @@ namespace TNT::Operator::Sparse {
     UInt _dimH;
     UInt _length;
     std::map<std::string, double> P;
-    std::map<std::string, Configuration::Constraint> C;
+    // std::map<std::string, Configuration::Constraint> C;
     std::vector<Tensor::Sparse::Tensor<F>> W;
     MPO(){};
 
   public:
+    MPO(const UInt length, const Tensor::Sparse::Tensor<F> O);
     MPO(const UInt dimW, const UInt dimH, const UInt length);
 
     MPO(const Configuration::Configuration<F> &conf, const std::map<std::string, double> &P);
-    MPO(const Configuration::Configuration<F> &conf, const std::map<std::string, double> &P,
-	const std::map<std::string, Configuration::Constraint> &C);
 
     // Calculate W("b1,b1',b2,b2',a1,a2'") = W1("b1,b2,a1,a2")W2("b1',b2',a2,a2'")
     // then merge b1''=(b1,b1') b2''=(b2,b2') to W("b1'',b2'',a1,a2'") =
@@ -56,10 +55,20 @@ namespace TNT::Operator::Sparse {
     Tensor::Sparse::Tensor<F> &operator[](const UInt &site) { return W[site - 1]; }
 
     const Tensor::Sparse::Tensor<F> &operator[](const UInt &site) const { return W[site - 1]; }
+
+    MPO<F> initialize_contractions(const MPO<F> &rhs) {}
+
+    // Right and Left Contractions
+    // 1 and L are boundary sites
+    // std::vector<Tensor::Tensor<F>> LC;
+    // std::vector<Tensor::Tensor<F>> RC;
   };
 
   template <typename F>
   MPO<F> Identity(const UInt dimW, const UInt dimH, const UInt length);
+
+  template <typename F>
+  std::vector<MPO<F>> Constraints(const Configuration::Configuration<F> &conf, const std::map<std::string, double> &P);
 
   template <typename F>
   std::ostream &operator<<(std::ostream &out, const MPO<F> &t);

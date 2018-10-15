@@ -124,9 +124,9 @@ namespace TNT::Tensor::Sparse {
   }
 
   template <typename F>
-  std::tuple<F, TNT::Tensor::Tensor<F>> EigenSolver<F>::optimize(const TNT::Tensor::Contraction<F> &seq1,
-                                                                 const std::vector<TNT::Tensor::Projector<F>> &P,
-                                                                 const std::vector<TNT::Tensor::Tensor<F>> &X) const {
+  std::tuple<F, TNT::Tensor::Tensor<F>>
+  EigenSolver<F>::optimize(const TNT::Tensor::Contraction<F> &seq1, const std::vector<TNT::Tensor::TensorScalar<F>> &P,
+                           const std::vector<TNT::Tensor::Sparse::TensorConstraint<F>> &X) const {
     int err = 0;
 
     double ev;
