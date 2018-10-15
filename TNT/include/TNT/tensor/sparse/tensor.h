@@ -78,6 +78,9 @@ namespace TNT::Tensor::Sparse {
   class Tensor;
 
   template <typename F>
+  using TensorConstraint = std::tuple<Tensor<F>, F, F>;
+
+  template <typename F>
   Tensor<F> contract(const std::string subscript, std::map<std::string, UInt> dim_map,
                      const std::array<const Tensor<F> *, 2> &t);
 
@@ -157,9 +160,12 @@ namespace TNT::Tensor::Sparse {
 
     Tensor<F> &readFrom(const F *source, const double &eps = EPS);
     const Tensor<F> &writeTo(F *target, const double &eps = EPS) const;
+    const Tensor<F> &addTo(F *target, const F alpha, const double &eps = EPS) const;
 
     Tensor<F> &purge(const double &eps = EPS);
 
+    Tensor<F> &operator=(const Tensor<F> &t);
+    // Tensor<F> &operator=(Tensor<F> &&t) = default;
     Tensor<F> &operator=(const Contraction<F> &tc);
 
     Tensor<F> &operator+=(const Tensor<F> &M);

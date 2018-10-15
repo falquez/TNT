@@ -86,7 +86,7 @@ int main(int argc, char **argv) {
 
       const auto [i_l, i_r, i_dir] = A[n].position(state);
       // Projection Operators
-      std::vector<Tensor::Projector<NumericalType>> P(n);
+      std::vector<Tensor::TensorScalar<NumericalType>> P(n);
 
       // Right and Left Contractions
       // 1 and L are boundary sites
@@ -119,7 +119,7 @@ int main(int argc, char **argv) {
 
         // Calculate Projection Operators
         for (unsigned int n_i = 0; n_i < n; n_i++)
-          P[n_i] = {E[n_i], A[n_i](A[n], {l, r})};
+          P[n_i] = {A[n_i](A[n], {l, r}), -E[n_i]};
 
         // Optimize A[l]*A[l+1]
         std::cout << "INFO: Optimize A[" << l << "]*A[" << r << "]"

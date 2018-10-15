@@ -47,10 +47,14 @@ target_link_libraries(
   PRIVATE openblas primme tcl hptt Boost::filesystem
 )
 
-# Unit tests
-#add_executable(testlib
-#    test/main.cpp
-#    test/ising/main.cpp
-#    )
-#target_link_libraries(testlib TNT)
-#add_test(testlib testlib)
+
+
+#Unit tests
+add_executable(
+  testTNT
+  test/main.cpp
+  test/tensor/tensor.cpp
+)
+target_link_libraries(testTNT TNT)
+add_test(NAME test COMMAND testTNT)
+

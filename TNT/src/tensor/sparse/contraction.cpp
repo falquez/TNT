@@ -41,14 +41,13 @@ namespace TNT::Tensor::Sparse {
 
   public:
     ConcurrentHashContraction(const ConcurrentHashMap<std::vector<UInt>, F> &factor,
-                              ConcurrentHashMap<std::vector<UInt>, F> &result,
-                              std::vector<UInt> pos, std::vector<UInt> fidx)
+                              ConcurrentHashMap<std::vector<UInt>, F> &result, std::vector<UInt> pos,
+                              std::vector<UInt> fidx)
         : factor(factor), result(result), pos(pos), free_idx(fidx) {}
 
     void operator()(typename ConcurrentHashMap<std::vector<UInt>, F>::const_range_type &r) const {
 
-      for (typename ConcurrentHashMap<std::vector<UInt>, F>::const_iterator it1 = r.begin();
-           it1 != r.end(); ++it1) {
+      for (typename ConcurrentHashMap<std::vector<UInt>, F>::const_iterator it1 = r.begin(); it1 != r.end(); ++it1) {
         std::vector<UInt> ind = it1->first;
         F c1 = it1->second;
         std::vector<UInt> key(pos.size());
@@ -75,13 +74,11 @@ namespace TNT::Tensor::Sparse {
     std::vector<UInt> pos;
 
   public:
-    ConcurrentEmplace(ConcurrentMultiMap<std::vector<UInt>, std::vector<UInt>> &elem,
-                      std::vector<UInt> _pos)
+    ConcurrentEmplace(ConcurrentMultiMap<std::vector<UInt>, std::vector<UInt>> &elem, std::vector<UInt> _pos)
         : elements(elem), pos(_pos) {}
 
     void operator()(typename ConcurrentHashMap<std::vector<UInt>, F>::const_range_type &r) const {
-      for (typename ConcurrentHashMap<std::vector<UInt>, F>::const_iterator it1 = r.begin();
-           it1 != r.end(); ++it1) {
+      for (typename ConcurrentHashMap<std::vector<UInt>, F>::const_iterator it1 = r.begin(); it1 != r.end(); ++it1) {
         std::vector<UInt> ind = it1->first;
         std::vector<UInt> key(pos.size());
         for (unsigned int i = 0; i < pos.size(); i++)
@@ -102,16 +99,14 @@ namespace TNT::Tensor::Sparse {
     std::vector<std::array<UInt, 2>> free_idx;
 
   public:
-    ConcurrentUpdate(
-        ConcurrentMultiMap<std::vector<UInt>, std::vector<UInt>> &elements,
-        const ConcurrentHashMap<std::vector<UInt>, F> &factor,
-        ConcurrentMultiMap<std::vector<UInt>, std::array<std::vector<UInt>, 2>> &elements2,
-        std::vector<UInt> pos, std::vector<std::array<UInt, 2>> fidx)
+    ConcurrentUpdate(ConcurrentMultiMap<std::vector<UInt>, std::vector<UInt>> &elements,
+                     const ConcurrentHashMap<std::vector<UInt>, F> &factor,
+                     ConcurrentMultiMap<std::vector<UInt>, std::array<std::vector<UInt>, 2>> &elements2,
+                     std::vector<UInt> pos, std::vector<std::array<UInt, 2>> fidx)
         : elements(elements), factor(factor), elements2(elements2), pos(pos), free_idx(fidx) {}
 
     void operator()(typename ConcurrentHashMap<std::vector<UInt>, F>::const_range_type &r) const {
-      for (typename ConcurrentHashMap<std::vector<UInt>, F>::const_iterator it1 = r.begin();
-           it1 != r.end(); ++it1) {
+      for (typename ConcurrentHashMap<std::vector<UInt>, F>::const_iterator it1 = r.begin(); it1 != r.end(); ++it1) {
         std::vector<UInt> ind1 = it1->first;
 
         std::vector<UInt> key(pos.size());
@@ -147,10 +142,8 @@ namespace TNT::Tensor::Sparse {
         : factor0(factor0), factor1(factor1), result(result) {}
 
     void operator()(
-        typename ConcurrentMultiMap<std::vector<UInt>,
-                                    std::array<std::vector<UInt>, 2>>::const_range_type &r) const {
-      for (typename ConcurrentMultiMap<std::vector<UInt>,
-                                       std::array<std::vector<UInt>, 2>>::const_iterator it =
+        typename ConcurrentMultiMap<std::vector<UInt>, std::array<std::vector<UInt>, 2>>::const_range_type &r) const {
+      for (typename ConcurrentMultiMap<std::vector<UInt>, std::array<std::vector<UInt>, 2>>::const_iterator it =
                r.begin();
            it != r.end(); ++it) {
         std::vector<UInt> r_idx = it->first;
@@ -271,11 +264,9 @@ namespace TNT::Tensor::Sparse {
                       tbb::auto_partitioner());
 
     Tensor<F> result(rdim);
-    typename ConcurrentMultiMap<std::vector<UInt>,
-                                std::array<std::vector<UInt>, 2>>::const_range_type r3 =
+    typename ConcurrentMultiMap<std::vector<UInt>, std::array<std::vector<UInt>, 2>>::const_range_type r3 =
         elements2.range();
-    tbb::parallel_for(r3, ConcurrentSum<F>(t[0]->data, t[1]->data, result.data),
-                      tbb::auto_partitioner());
+    tbb::parallel_for(r3, ConcurrentSum<F>(t[0]->data, t[1]->data, result.data), tbb::auto_partitioner());
 
     return std::move(result);
   }
@@ -305,6 +296,12 @@ namespace TNT::Tensor::Sparse {
     return *this;
   }
 
+  template <typename F>
+  F Contraction<F>::dotProduct() const {
+    throw std::invalid_argument("Not Implemented");
+
+    // return TNT::BLAS::dot<F>(totalDim[0], {data[0], data[1]});
+  }
 } // namespace TNT::Tensor::Sparse
 
 template class TNT::Tensor::Sparse::Contraction<double>;
@@ -314,15 +311,12 @@ template TNT::Tensor::Sparse::Tensor<double>
 TNT::Tensor::Sparse::contract2<double>(const std::string subscript_r, std::vector<UInt> dim_r,
                                        const std::array<const Tensor<double> *, 2> &t);
 template TNT::Tensor::Sparse::Tensor<std::complex<double>>
-TNT::Tensor::Sparse::contract2<std::complex<double>>(
-    const std::string subscript_r, std::vector<UInt> dim_r,
-    const std::array<const Tensor<std::complex<double>> *, 2> &t);
+TNT::Tensor::Sparse::contract2<std::complex<double>>(const std::string subscript_r, std::vector<UInt> dim_r,
+                                                     const std::array<const Tensor<std::complex<double>> *, 2> &t);
 
 template TNT::Tensor::Sparse::Tensor<double>
-TNT::Tensor::Sparse::contract<double>(const std::string subscript,
-                                      std::map<std::string, UInt> dim_map,
+TNT::Tensor::Sparse::contract<double>(const std::string subscript, std::map<std::string, UInt> dim_map,
                                       const std::array<const Tensor<double> *, 2> &t);
 template TNT::Tensor::Sparse::Tensor<std::complex<double>>
-TNT::Tensor::Sparse::contract<std::complex<double>>(
-    const std::string subscript, std::map<std::string, UInt> dim_map,
-    const std::array<const Tensor<std::complex<double>> *, 2> &t);
+TNT::Tensor::Sparse::contract<std::complex<double>>(const std::string subscript, std::map<std::string, UInt> dim_map,
+                                                    const std::array<const Tensor<std::complex<double>> *, 2> &t);

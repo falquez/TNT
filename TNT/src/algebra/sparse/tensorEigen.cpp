@@ -54,6 +54,7 @@ void SparseTensorVecPX(void *x, PRIMME_INT *ldx, void *y, PRIMME_INT *ldy, int *
       static_cast<TNT::Algebra::Sparse::SparseTensorData<F> *>(primme->matrix);
 
   unsigned int nprojs = mdata->P.size();
+  unsigned int nconsr = mdata->N.size();
   // std::cout << "nprojs=" << nprojs << std::endl;
   *ierr = 0;
   for (int i = 0; i < *blockSize; i++) {
@@ -73,8 +74,36 @@ void SparseTensorVecPX(void *x, PRIMME_INT *ldx, void *y, PRIMME_INT *ldy, int *
       Xd.readFrom((F *)x + (*ldx) * i);
       // std::cout << "mdata->P[" << n << "]" << mdata->P[n] << std::endl;
       // std::cout << "Xd=" << Xd << std::endl;
-      F c = std::get<1>(mdata->P[n])(mdata->sub[0]) * Xd(mdata->sub[0]);
-      std::get<1>(mdata->P[n]).conjugate().addTo((F *)y + (*ldy) * i, -std::get<0>(mdata->P[n]) * c);
+      F c = std::get<0>(mdata->P[n])(mdata->sub[0]) * Xd(mdata->sub[0]);
+      std::get<0>(mdata->P[n]).conjugate().addTo((F *)y + (*ldy) * i, std::get<1>(mdata->P[n]) * c);
+    }
+
+    for (unsigned int c_i = 0; c_i < nconsr; c_i++) {
+      // TNT::Tensor::Sparse::Tensor<F> Xs(mdata->dim[0]);
+      TNT::Tensor::Sparse::Tensor<F> Ys;
+      // Xs.readFrom((F *)x + (*ldx) * i);
+      // TNT::Tensor::Sparse::Tensor<F> Y;
+
+      const TNT::Tensor::Sparse::Tensor<F> *p1 = &(std::get<0>(mdata->N[c_i])(mdata->subM));
+      const TNT::Tensor::Sparse::Tensor<F> *p2 = &(X(mdata->sub[0]));
+
+      Ys = TNT::Tensor::Sparse::contract2<F>(mdata->sub[1], mdata->dim[1], {p1, p2});
+      Ys.purge();
+      // std::cout << "mdata->P[" << n << "]" << mdata->P[n] << std::endl;
+      // std::cout << "Xd=" << Xd << std::endl;
+      // Ys(mdata->sub[1]) = std::get<0>(mdata->N[c_i])(mdata->subM) * Xs(mdata->sub[0]);
+      TNT::Tensor::Tensor<F> Xd(X);
+      TNT::Tensor::Tensor<F> Yd(Ys);
+      F n = Yd(mdata->sub[0]) * Xd(mdata->sub[0]);
+
+      // F d = n - std::get<1>(mdata->N[c_i]);
+      F d = std::get<1>(mdata->N[c_i]) - std::get<2>(mdata->N[c_i]);
+
+      // TNT::Tensor::Tensor<F> Yd2(Y);
+      std::cout << "Iter Charge = " << n << " mu=" << std::get<1>(mdata->N[c_i]) << std::endl;
+      Ys.addTo((F *)y + (*ldy) * i, std::get<1>(mdata->N[c_i]));
+
+      // std::get<0>(mdata->P[n]).conjugate().addTo((F *)y + (*ldy) * i, std::get<1>(mdata->P[n]) * c);
     }
   }
 }
@@ -91,8 +120,8 @@ namespace TNT::Algebra::Sparse {
 
   template <typename F>
   int tensorEigen(double *evals, F *evecs, const std::array<std::string, 2> &sub,
-                  const Tensor::Sparse::Contraction<F> &seq, const std::vector<TNT::Tensor::Projector<F>> &P,
-                  const std::vector<TNT::Tensor::Tensor<F>> &X, const Options &options) {
+                  const Tensor::Sparse::Contraction<F> &seq, const std::vector<TNT::Tensor::TensorScalar<F>> &P,
+                  const std::vector<TNT::Tensor::Sparse::TensorConstraint<F>> &X, const Options &options) {
     int err = 0;
     Tensor::Sparse::Tensor<F> T;
     std::unique_ptr<double[]> targetShifts;
@@ -181,13 +210,12 @@ namespace TNT::Algebra::Sparse {
   }
 } // namespace TNT::Algebra::Sparse
 
-template int TNT::Algebra::Sparse::tensorEigen<double>(double *, double *, const std::array<std::string, 2> &,
-                                                       const Tensor::Sparse::Contraction<double> &,
-                                                       const std::vector<TNT::Tensor::Projector<double>> &,
-                                                       const std::vector<TNT::Tensor::Tensor<double>> &,
-                                                       const Options &);
+template int TNT::Algebra::Sparse::tensorEigen<double>(
+    double *, double *, const std::array<std::string, 2> &, const Tensor::Sparse::Contraction<double> &,
+    const std::vector<TNT::Tensor::TensorScalar<double>> &,
+    const std::vector<TNT::Tensor::Sparse::TensorConstraint<double>> &, const Options &);
 template int TNT::Algebra::Sparse::tensorEigen<std::complex<double>>(
     double *, std::complex<double> *, const std::array<std::string, 2> &,
     const Tensor::Sparse::Contraction<std::complex<double>> &,
-    const std::vector<TNT::Tensor::Projector<std::complex<double>>> &,
-    const std::vector<TNT::Tensor::Tensor<std::complex<double>>> &, const Options &);
+    const std::vector<TNT::Tensor::TensorScalar<std::complex<double>>> &,
+    const std::vector<TNT::Tensor::Sparse::TensorConstraint<std::complex<double>>> &, const Options &);

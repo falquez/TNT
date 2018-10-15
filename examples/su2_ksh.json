@@ -30,7 +30,8 @@
     },
     "constraints": {
         "meson": {
-            "operator": "N - Id",
+            "operator": "N",
+            "value": 10,
             "weight": 2
         },
         "boundary1": {

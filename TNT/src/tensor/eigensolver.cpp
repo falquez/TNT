@@ -23,8 +23,8 @@
 
 namespace TNT::Tensor {
   template <typename F>
-  std::tuple<F, Tensor<F>> EigenSolver<F>::optimize(const Tensor<F> &t1, const std::vector<Projector<F>> &P,
-                                                    const std::vector<Tensor<F>> &X) const {
+  std::tuple<F, Tensor<F>> EigenSolver<F>::optimize(const Tensor<F> &t1, const std::vector<TensorScalar<F>> &P,
+                                                    const std::vector<TensorScalar<F>> &X) const {
     int err = 0;
 
     double ev;
@@ -54,8 +54,8 @@ namespace TNT::Tensor {
   }
 
   template <typename F>
-  std::tuple<F, Tensor<F>> EigenSolver<F>::optimize(const Contraction<F> &seq1, const std::vector<Projector<F>> &P,
-                                                    const std::vector<Tensor<F>> &X) const {
+  std::tuple<F, Tensor<F>> EigenSolver<F>::optimize(const Contraction<F> &seq1, const std::vector<TensorScalar<F>> &P,
+                                                    const std::vector<TensorScalar<F>> &X) const {
     int err = 0;
 
     double ev;

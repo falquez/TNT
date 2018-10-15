@@ -52,7 +52,8 @@ namespace TNT::Configuration {
   struct Constraint {
     std::string name;
     std::string expression;
-    double weight;
+    double weight = 0.0;
+    double value = 0.0;
     unsigned int site = 0;
   };
 

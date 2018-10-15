@@ -96,8 +96,8 @@ namespace TNT::Algebra {
 
   template <typename F>
   int tensorEigen(double *evals, F *evecs, const std::array<std::string, 2> &sub, const Tensor::Contraction<F> &seq,
-                  const std::vector<TNT::Tensor::Projector<F>> &P = {},
-                  const std::vector<TNT::Tensor::Tensor<F>> &X = {}, const Options &options = Options{});
+                  const std::vector<TNT::Tensor::TensorScalar<F>> &P = {},
+                  const std::vector<TNT::Tensor::TensorScalar<F>> &X = {}, const Options &options = Options{});
 
   /* @TODO: Document side data structure
    */
