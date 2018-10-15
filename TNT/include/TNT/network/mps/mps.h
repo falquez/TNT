@@ -62,6 +62,8 @@ namespace TNT::Network::MPS {
 
     unsigned int size() const { return _A.size(); }
 
+    MPS<F> &initialize();
+
     MPS<F> &operator()(const std::string &idx) {
       sub = idx;
       return *this;

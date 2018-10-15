@@ -68,7 +68,7 @@ namespace TNT::Network::MPS {
     //_LC = std::vector<Tensor::Tensor<F>>(length + 1);
     //_RC = std::vector<Tensor::Tensor<F>>(length + 1);
 
-    if (conf.restart) {
+    /*if (conf.restart) {
       throw std::invalid_argument("Restart not implemented");
       // for(unsigned int l=0;l<length;l++){
       //_A[l] =
@@ -92,31 +92,52 @@ namespace TNT::Network::MPS {
         _A[l].initialize(2);
         _A[l].normalize_QRD(1);
       }
-
-      /*
-      // Initialize Right Contractions
-      // std::cout << "Initializing Right Contractions" << std::endl;
-      _RC[L] = Tensor::Tensor<F>({1, 1, 1}, 1.0);
-      for (unsigned int l = L - 1; l >= i_l; l--) {
-        Tensor::Tensor DW(W[l + 1]);
-        RC[l]("b1,a1,a1'") =
-            A[n][l + 1]("s,a1,a2") * DW("b1,b2,s,s'") * RC[l + 1]("b2,a2,a2'") * A[n][l + 1].conjugate()("s',a1',a2'");
-      }
-
-      // Initialize Left Contractions
-      // std::cout << "Initializing Left Contractions" << std::endl;
-      LC[1] = Tensor::Tensor<NumericalType>({1, 1, 1}, 1.0);
-      for (unsigned int l = 1; l < i_r; l++) {
-        Tensor::Tensor DW(W[l]);
-        LC[l + 1]("b2,a2,a2'") =
-            A[n][l]("s,a1,a2") * DW("b1,b2,s,s'") * LC[l]("b1,a1,a1'") * A[n][l].conjugate()("s',a1',a2'");
       }*/
 
-      // for(ULong l=0;l<length;l++){
-      // Tensor::writeToFile(_A[l],
-      // output_dir+"/MPS/"+Util::format(l,length)+".hdf5");
-      //}
+    /*
+    // Initialize Right Contractions
+    // std::cout << "Initializing Right Contractions" << std::endl;
+    _RC[L] = Tensor::Tensor<F>({1, 1, 1}, 1.0);
+    for (unsigned int l = L - 1; l >= i_l; l--) {
+      Tensor::Tensor DW(W[l + 1]);
+      RC[l]("b1,a1,a1'") =
+	  A[n][l + 1]("s,a1,a2") * DW("b1,b2,s,s'") * RC[l + 1]("b2,a2,a2'") * A[n][l + 1].conjugate()("s',a1',a2'");
     }
+
+    // Initialize Left Contractions
+    // std::cout << "Initializing Left Contractions" << std::endl;
+    LC[1] = Tensor::Tensor<NumericalType>({1, 1, 1}, 1.0);
+    for (unsigned int l = 1; l < i_r; l++) {
+      Tensor::Tensor DW(W[l]);
+      LC[l + 1]("b2,a2,a2'") =
+	  A[n][l]("s,a1,a2") * DW("b1,b2,s,s'") * LC[l]("b1,a1,a1'") * A[n][l].conjugate()("s',a1',a2'");
+    }*/
+
+    // for(ULong l=0;l<length;l++){
+    // Tensor::writeToFile(_A[l],
+    // output_dir+"/MPS/"+Util::format(l,length)+".hdf5");
+    //}
+  }
+
+  template <typename F>
+  MPS<F> &MPS<F>::initialize() {
+    unsigned int lDim = 1;
+    for (ULong l = 0; l < length / 2; l++) {
+      unsigned int rDim = std::min(lDim * dimH, dimB);
+      _A[l] = Tensor::Tensor<F>({dimH, lDim, rDim});
+      lDim = rDim;
+    }
+    unsigned int rDim = 1;
+    for (ULong l = length - 1; l >= length / 2; l--) {
+      unsigned int lDim = std::min(rDim * dimH, dimB);
+      _A[l] = Tensor::Tensor<F>({dimH, lDim, rDim});
+      rDim = lDim;
+    }
+    for (ULong l = 0; l < _A.size(); l++) {
+      _A[l].initialize(2);
+      _A[l].normalize_QRD(1);
+    }
+    return *this;
   }
 
   template <typename F>
