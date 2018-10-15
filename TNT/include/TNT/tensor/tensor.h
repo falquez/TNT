@@ -40,9 +40,6 @@ namespace TNT::Tensor {
   using TensorScalar = std::tuple<Tensor<F>, F>;
 
   template <typename F>
-  int writeToFile(const Tensor<F> &tensor, const std::string &filename, const std::string &path = "/Tensor");
-
-  template <typename F>
   class Tensor {
 
     std::unique_ptr<F[]> data;
@@ -76,6 +73,8 @@ namespace TNT::Tensor {
     Tensor<F> operator-() const;
     Tensor<F> operator*(const F &c) const;
     Contraction<F> operator*(const Tensor<F> &rhs) const;
+
+    int writeToFile(const std::string &filename, const std::string &path = "/Tensor", const unsigned int &id = 0) const;
 
     F &operator[](const std::vector<UInt> &idx) {
       int k = 0;

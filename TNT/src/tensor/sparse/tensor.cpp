@@ -46,15 +46,16 @@ namespace TNT::Tensor::Sparse {
       i += idx[p] * stride[p];
     return i;
   }
+
   template <typename F>
-  int writeToFile(const Tensor<F> &tensor, const std::string &filename, const std::string &path) {
+  int Tensor<F>::writeToFile(const std::string &filename, const std::string &path, const unsigned int &id) {
     Storage::Storage storage(filename, Storage::FileMode::CreateOverwrite);
 
-    Storage::Data::Metadata<std::vector<unsigned int>> dims{"dimension", tensor.dimension()};
+    Storage::Data::Metadata<std::vector<unsigned int>> dims{"dimension", dim};
 
-    std::vector<UInt> stride = tensor.strides();
+    // std::vector<UInt> stride = stride;
     std::vector<Storage::Data::SparseL<F>> data;
-    for (const auto &[idx, v] : tensor.elements()) {
+    for (const auto &[idx, v] : elements()) {
       data.push_back({convertIndex(stride, idx), v});
     }
 
@@ -63,7 +64,7 @@ namespace TNT::Tensor::Sparse {
     storage.create_group(path);
     storage.create(path, dims);
 
-    storage.create(path + "/data", data);
+    storage.create(path + "/" + std::to_string(id), data);
 
     return 0;
   }
@@ -718,12 +719,6 @@ template std::vector<std::array<TNT::Tensor::Sparse::Tensor<double>, 2>>
 TNT::Tensor::Sparse::kronecker_SVD<double>(const Tensor<double> &, UInt, const double);
 template std::vector<std::array<TNT::Tensor::Sparse::Tensor<std::complex<double>>, 2>>
 TNT::Tensor::Sparse::kronecker_SVD<std::complex<double>>(const Tensor<std::complex<double>> &, UInt, const double);
-
-template int TNT::Tensor::Sparse::writeToFile<double>(const Tensor<double> &tensor, const std::string &filename,
-                                                      const std::string &path);
-template int TNT::Tensor::Sparse::writeToFile<std::complex<double>>(const Tensor<std::complex<double>> &tensor,
-                                                                    const std::string &filename,
-                                                                    const std::string &path);
 
 template TNT::Tensor::Sparse::Tensor<double> TNT::Tensor::Sparse::IdentityMatrix(unsigned int d);
 template TNT::Tensor::Sparse::Tensor<std::complex<double>> TNT::Tensor::Sparse::IdentityMatrix(unsigned int d);

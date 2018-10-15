@@ -32,22 +32,6 @@
 namespace TNT::Tensor {
 
   template <typename F>
-  int writeToFile(const Tensor<F> &tensor, const std::string &filename, const std::string &path) {
-    Storage::Storage storage(filename, Storage::FileMode::CreateOverwrite);
-    Storage::Data::Dense<F> dense;
-
-    dense.data = std::make_unique<F[]>(tensor.size());
-    for (const auto &d : tensor.dimension())
-      dense.dim.push_back(d);
-    tensor.writeTo(dense.data.get());
-
-    storage.create_group(path);
-    storage.create(path + "/data", dense);
-
-    return 0;
-  }
-
-  template <typename F>
   Tensor<F>::Tensor(const std::vector<UInt> &dim) : dim{dim}, stride(dim.size()), sub{} {
 
     totalDim = Util::multiply(dim);
@@ -74,6 +58,22 @@ namespace TNT::Tensor {
       stride[i] = dim[i - 1] * stride[i - 1];
 
     data = std::move(dense.data);
+  }
+
+  template <typename F>
+  int Tensor<F>::writeToFile(const std::string &filename, const std::string &path, const unsigned int &id) const {
+    Storage::Storage storage(filename, Storage::FileMode::CreateOverwrite);
+    Storage::Data::Dense<F> dense;
+
+    dense.data = std::make_unique<F[]>(totalDim);
+    for (const auto &d : dim)
+      dense.dim.push_back(d);
+    writeTo(dense.data.get());
+
+    storage.create_group(path);
+    storage.create(path + "/" + std::to_string(id), dense);
+
+    return 0;
   }
 
   template <typename F>
@@ -723,10 +723,6 @@ namespace TNT::Tensor {
 
 template class TNT::Tensor::Tensor<double>;
 template class TNT::Tensor::Tensor<std::complex<double>>;
-
-template int TNT::Tensor::writeToFile<double>(const Tensor<double> &, const std::string &, const std::string &);
-template int TNT::Tensor::writeToFile<std::complex<double>>(const Tensor<std::complex<double>> &, const std::string &,
-                                                            const std::string &);
 
 template std::ostream &TNT::Tensor::operator<<<double>(std::ostream &, const Tensor<double> &);
 template std::ostream &TNT::Tensor::operator<<<std::complex<double>>(std::ostream &,

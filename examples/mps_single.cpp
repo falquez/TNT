@@ -158,7 +158,7 @@ int main(int argc, char **argv) {
         std::cout << std::endl;
 
         // Store solutions to disk
-        Tensor::writeToFile(A[n][s1], output_dir + network_dir + "/" + format(s1), "/Tensor");
+	A[n][s1].writeToFile(output_dir + network_dir + "/" + format(s1), "/Tensor");
 
         // Update left contraction for next iteration
         switch (dir) {

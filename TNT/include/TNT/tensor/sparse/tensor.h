@@ -91,8 +91,8 @@ namespace TNT::Tensor::Sparse {
   template <typename F>
   std::ostream &operator<<(std::ostream &out, const Tensor<F> &T);
 
-  template <typename F>
-  int writeToFile(const Tensor<F> &tensor, const std::string &filename, const std::string &path = "/Tensor/Sparse");
+  // template <typename F>
+  // int writeToFile(const Tensor<F> &tensor, const std::string &filename, const std::string &path = "/Tensor/Sparse");
 
   template <typename F>
   class Tensor {
@@ -114,6 +114,9 @@ namespace TNT::Tensor::Sparse {
 
     Tensor(const std::string &filename, const std::string &path, const unsigned int &id = 0);
     //~Tensor(){}
+
+    int writeToFile(const std::string &filename, const std::string &path = "/Tensor/Sparse",
+		    const unsigned int &id = 0);
 
     Tensor<F> &operator<<=(const std::vector<std::tuple<std::vector<UInt>, F>> &c);
     Tensor<F> &operator<<=(const std::tuple<std::vector<UInt>, std::optional<F>> &c);

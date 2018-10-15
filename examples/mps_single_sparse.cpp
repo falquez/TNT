@@ -146,7 +146,7 @@ int main(int argc, char **argv) {
       std::cout << std::endl;
 
       // Store solutions to disk
-      Tensor::writeToFile(A[s1], param_dir + "/" + network_dir + "/" + format(s1), "/Tensor");
+      A[s1].writeToFile(param_dir + "/" + network_dir + "/" + format(s1), "/Tensor");
 
       // Update left contraction for next iteration
       switch (dir) {
