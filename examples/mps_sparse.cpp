@@ -114,8 +114,8 @@ int main(int argc, char **argv) {
         continue;
 
       const auto [i_l, i_r, i_dir] = A[n].position(state);
-      std::cout << "l=" << i_l << " r=" << i_r << " dir=";
-      std::cout << (i_dir == Network::MPS::Sweep::Direction::Right ? "right" : "left") << std::endl;
+      // std::cout << "l=" << i_l << " r=" << i_r << " dir=";
+      // std::cout << (i_dir == Network::MPS::Sweep::Direction::Right ? "right" : "left") << std::endl;
 
       // Projection Operators
       std::vector<Tensor::TensorScalar<NumericalType>> Pr(n);
@@ -176,16 +176,17 @@ int main(int argc, char **argv) {
             T("s1,s3,a1,a2").SVD({{"s1,a1,a3", "s3,a3,a2"}}, {norm, nsv, config.tolerance("svd")});
 
         double E2 = A[n](W2);
+	double NV = params.at("VAR");
         E[n] = ew;
         state.eigenvalue = ew;
-        state.variance = (A[n](W2) - ew * ew) / (L * L);
+	state.variance = (E2 - ew * ew) / (NV * L * L);
 
         std::cout << " n=" << n << " ip=" << p_i << " swp=" << state.iteration / L;
         std::cout << " i=" << state.iteration << ", l=" << l << ", r=" << r << ", ";
         std::cout.precision(8);
         for (const auto &[name, v] : params)
           std::cout << name << "=" << v << ", ";
-        std::cout << "ev=" << state.eigenvalue << ", var=" << state.variance;
+	std::cout << "ev=" << state.eigenvalue << ", dE=" << E2 - E[n] * E[n] << ", var=" << state.variance;
         std::cout.precision(std::numeric_limits<double>::max_digits10);
         std::cout << ", w=" << state.eigenvalue / (2 * L * params.at("x"));
         // std::cout << ", d=" << (E[n] - E[0]) / (2 * std::sqrt(params.at("x")));
