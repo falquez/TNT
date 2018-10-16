@@ -179,7 +179,7 @@ int main(int argc, char **argv) {
 	double NV = params.at("VAR");
         E[n] = ew;
         state.eigenvalue = ew;
-	state.variance = (E2 - ew * ew) / (NV * L * L);
+	state.variance = (E2 - ew * ew) / (NV * L);
 
         std::cout << " n=" << n << " ip=" << p_i << " swp=" << state.iteration / L;
         std::cout << " i=" << state.iteration << ", l=" << l << ", r=" << r << ", ";
