@@ -17,14 +17,22 @@
         "max_bond_dim": 12
     },
     "hamiltonian": {
-        "dim": 6,
+        "dim": 14,
         "operators": {
-            "single": "E + y*(Id+sgn(l)*N)",
+            "single": "E2 + y*(Id+sgn(l)*N)",
             "nearest": [
-                [ "sqrt(x)*U1", "sqrt(x)*V1" ],
-                [ "sqrt(x)*U2", "sqrt(x)*V2" ],
-                [ "sqrt(x)*U3", "sqrt(x)*V3" ],
-                [ "sqrt(x)*U4", "sqrt(x)*V4" ]
+                [  "sqrt(x)*U1",  "sqrt(x)*V1" ],
+                [  "sqrt(x)*U2",  "sqrt(x)*V2" ],
+                [  "sqrt(x)*U3",  "sqrt(x)*V3" ],
+                [  "sqrt(x)*U4",  "sqrt(x)*V4" ],
+                [  "sqrt(x)*U5",  "sqrt(x)*V5" ],
+                [  "sqrt(x)*U6",  "sqrt(x)*V6" ],
+                [  "sqrt(x)*U7",  "sqrt(x)*V7" ],
+                [  "sqrt(x)*U8",  "sqrt(x)*V8" ],
+                [  "sqrt(x)*U9",  "sqrt(x)*V9" ],
+                [ "sqrt(x)*U10", "sqrt(x)*V10" ],
+                [ "sqrt(x)*U11", "sqrt(x)*V11" ],
+                [ "sqrt(x)*U12", "sqrt(x)*V12" ]
             ]
         }
     },
@@ -35,45 +43,45 @@
             "weight": 2
         },
         "boundary1": {
-            "operator": "F",
+            "operator": "F2",
             "site": 1,
             "weight": 1E3
         },
         "boundary2": {
-            "operator": "E",
+            "operator": "E2",
             "site": 10,
             "weight": 1E3
         }
     },
     "observables": {
         "N": { "type": "site", "operator": "N" },
-        "E": { "type": "site", "operator": "E" },
-        "F": { "type": "site", "operator": "F" },
+        "E2": { "type": "site", "operator": "E2" },
+        "F2": { "type": "site", "operator": "F2" },
         "C2": { "type": "shift", "value": 2}
     },
     "operators": {
-        "E": {
-            "file": "hamiltonian2_2.hdf5",
-            "path": "/HilbertSpace/Operator/E",
+        "E2": {
+            "file": "hamiltonian2_4.hdf5",
+            "path": "/HilbertSpace/Operator/E2",
             "sparse": true
         },
-        "F": {
-            "file": "hamiltonian2_2.hdf5",
-            "path": "/HilbertSpace/Operator/F",
+        "F2": {
+            "file": "hamiltonian2_4.hdf5",
+            "path": "/HilbertSpace/Operator/F2",
             "sparse": true
         },
         "N": {
-            "file": "hamiltonian2_2.hdf5",
+            "file": "hamiltonian2_4.hdf5",
             "path": "/HilbertSpace/Operator/N",
             "sparse": true
         },
         "U": {
-            "file": "hamiltonian2_2.hdf5",
+            "file": "hamiltonian2_4.hdf5",
             "path": "/HilbertSpace/Operator/U",
             "sparse": true
         },
         "V": {
-            "file": "hamiltonian2_2.hdf5",
+            "file": "hamiltonian2_4.hdf5",
             "path": "/HilbertSpace/Operator/V",
             "sparse": true
         }

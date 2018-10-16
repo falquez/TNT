@@ -98,20 +98,20 @@ int main(int argc, char **argv) {
       Network::State state(output_dir + "state.json", config.restart);
 
       if (state.restarted) {
-	std::cout << "Restarting MPS A[" << n << "] from iteration " << state.iteration << std::endl;
-	for (unsigned int l = 1; l <= L; l++)
-	  A[n][l] = Tensor::Tensor<NumericalType>(network_dir + format(l), "/Tensor");
+        std::cout << "Restarting MPS A[" << n << "] from iteration " << state.iteration << std::endl;
+        for (unsigned int l = 1; l <= L; l++)
+          A[n][l] = Tensor::Tensor<NumericalType>(network_dir + format(l), "/Tensor");
 
       } else {
-	std::cout << "Initializing MPS A[" << n << "]" << std::endl;
-	A[n].initialize();
-	for (unsigned int l = 1; l <= L; l++)
-	  A[n][l].writeToFile(network_dir + format(l), "/Tensor");
+        std::cout << "Initializing MPS A[" << n << "]" << std::endl;
+        A[n].initialize();
+        for (unsigned int l = 1; l <= L; l++)
+          A[n][l].writeToFile(network_dir + format(l), "/Tensor");
       }
 
       // Check if already finished
       if (boost::filesystem::exists(output_dir + "result.txt"))
-	continue;
+        continue;
 
       const auto [i_l, i_r, i_dir] = A[n].position(state);
       std::cout << "l=" << i_l << " r=" << i_r << " dir=";
@@ -161,7 +161,7 @@ int main(int argc, char **argv) {
         auto [ew, T] = ES({{"s1,s3,a1,a2", "s1',s3',a1',a2'"}})
                            .useInitial()
                            .setTolerance(config.tolerance("eigenvalue"))
-			   .optimize(A[n][l]("s1,a1,a") * A[n][r]("s3,a,a2"), Pr);
+                           .optimize(A[n][l]("s1,a1,a") * A[n][r]("s3,a,a2"), Pr);
 
         // @TODO: read max bond dimension from predefined vector, not current dim
         auto nsv = A[n][l]("s1,a1,a").dimension("a");
@@ -192,8 +192,8 @@ int main(int argc, char **argv) {
         std::cout << std::endl;
 
         // Store solutions to disk
-	A[n][l].writeToFile(network_dir + format(l), "/Tensor");
-	A[n][r].writeToFile(network_dir + format(r), "/Tensor");
+        A[n][l].writeToFile(network_dir + format(l), "/Tensor");
+        A[n][r].writeToFile(network_dir + format(r), "/Tensor");
 
         // Update left contraction for next iteration
         switch (dir) {
@@ -206,23 +206,22 @@ int main(int argc, char **argv) {
               A[n][r]("s,a1,a2") * DW("b1,b2,s,s'") * RC[r]("b2,a2,a2'") * A[n][r].conjugate()("s',a1',a2'");
           break;
         }
-	// Write observables to text file
-	for (const auto &[i_o, obs] : observables.iterate()) {
-	  std::string fname = output_dir + obs.name + ".tmp.txt";
-	  std::cout << "Writing " << fname << std::endl;
-	  std::ofstream ofile(fname);
-	  auto result = A[n](obs);
-	  for (const auto &r : result) {
-	    for (const auto &s : r.site)
-	      ofile << s << " ";
-	    ofile.precision(std::numeric_limits<double>::max_digits10);
-	    for (const auto &[name, v] : params)
-	      ofile << v << " ";
-	    ofile << state.eigenvalue << " " << state.variance << " ";
-	    ofile << r.value << std::endl;
-	  }
-	  ofile << std::endl;
-	}
+        // Write observables to text file
+        for (const auto &[i_o, obs] : observables.iterate()) {
+          // std::cout << "Writing " << fname << std::endl;
+          std::ofstream ofile(output_dir + obs.name + ".tmp.txt");
+          auto result = A[n](obs);
+          for (const auto &r : result) {
+            for (const auto &s : r.site)
+              ofile << s << " ";
+            ofile.precision(std::numeric_limits<double>::max_digits10);
+            for (const auto &[name, v] : params)
+              ofile << v << " ";
+            ofile << state.eigenvalue << " " << state.variance << " ";
+            ofile << r.value << std::endl;
+          }
+          ofile << std::endl;
+        }
       }
 
       // Write observables to text file
