@@ -199,7 +199,7 @@ namespace TNT::Algebra::Sparse {
     err = primme_set_method(PRIMME_DYNAMIC, &primme);
     primme.printLevel = options.verbosity;
 
-    if (options.verbosity > 0)
+    if (options.verbosity >= 4)
       primme_display_params(primme);
     /* Call primme  */
     err = PRIMME::calculate_ewp_primme<F>(evals, evecs, rnorm.get(), &primme);

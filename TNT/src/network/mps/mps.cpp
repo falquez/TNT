@@ -101,7 +101,7 @@ namespace TNT::Network::MPS {
     for (unsigned int l = L - 1; l >= i_l; l--) {
       Tensor::Tensor DW(W[l + 1]);
       RC[l]("b1,a1,a1'") =
-	  A[n][l + 1]("s,a1,a2") * DW("b1,b2,s,s'") * RC[l + 1]("b2,a2,a2'") * A[n][l + 1].conjugate()("s',a1',a2'");
+          A[n][l + 1]("s,a1,a2") * DW("b1,b2,s,s'") * RC[l + 1]("b2,a2,a2'") * A[n][l + 1].conjugate()("s',a1',a2'");
     }
 
     // Initialize Left Contractions
@@ -110,7 +110,7 @@ namespace TNT::Network::MPS {
     for (unsigned int l = 1; l < i_r; l++) {
       Tensor::Tensor DW(W[l]);
       LC[l + 1]("b2,a2,a2'") =
-	  A[n][l]("s,a1,a2") * DW("b1,b2,s,s'") * LC[l]("b1,a1,a1'") * A[n][l].conjugate()("s',a1',a2'");
+          A[n][l]("s,a1,a2") * DW("b1,b2,s,s'") * LC[l]("b1,a1,a1'") * A[n][l].conjugate()("s',a1',a2'");
     }*/
 
     // for(ULong l=0;l<length;l++){
@@ -264,7 +264,7 @@ namespace TNT::Network::MPS {
 
     switch (O.kind()) {
     case Operator::ObservableType::Site:
-      std::cout << "Measuring site observable " << O.name << " O = " << O[1] << std::endl;
+      // std::cout << "Measuring site observable " << O.name << " O = " << O[1] << std::endl;
       for (unsigned int l1 = 0; l1 < length; l1++) {
 
         std::array<Tensor::Tensor<F>, 2> T;

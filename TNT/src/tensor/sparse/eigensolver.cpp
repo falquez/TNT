@@ -149,8 +149,9 @@ namespace TNT::Tensor::Sparse {
       buff = std::make_unique<F[]>(T.totalDim);
     }
 
-    err = Algebra::Sparse::tensorEigen(&ev, buff.get(), sub, seq, P, X,
-                                       Algebra::Options(1, tolerance, initSize, Algebra::Target::smallest, {}));
+    auto options = Algebra::Options(1, tolerance, initSize, Algebra::Target::smallest, {});
+    options.verbosity = 3;
+    err = Algebra::Sparse::tensorEigen(&ev, buff.get(), sub, seq, P, X, options);
 
     T.data = std::move(buff);
 
