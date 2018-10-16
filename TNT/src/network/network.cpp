@@ -35,14 +35,14 @@ namespace TNT::Network {
     if (Util::file_exists(filename) && restart) {
       std::ifstream f(filename);
       f >> j;
-
       iteration = j["iteration"];
       eigenvalue = j["eigenvalue"];
+      variance = j["variance"];
       restarted = true;
     } else {
       j["iteration"] = iteration;
       j["eigenvalue"] = eigenvalue;
-
+      j["variance"] = variance;
       std::ofstream f(filename);
       f << std::setw(4) << j << std::endl;
       restarted = false;

@@ -62,7 +62,7 @@ namespace TNT::Network::MPS {
     dimH = hamiltonian.dim;
     dimB = network.dimB;
     length = network.length;
-    conv_tolerance = conf.tolerance("convergence") * length;
+    conv_tolerance = conf.tolerance("convergence");
 
     _A = std::vector<Tensor::Tensor<F>>(length);
     //_LC = std::vector<Tensor::Tensor<F>>(length + 1);

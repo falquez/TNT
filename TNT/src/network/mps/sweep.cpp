@@ -50,24 +50,9 @@ namespace TNT::Network::MPS::Sweep {
   }
 
   bool Iterator::operator!=(const Token) const {
-    // std::cout << "Iterator::operator!= iteration i=" << state.iteration << std::endl;
-    /*ULong i1 = state.iteration - 2;
-    ULong l1 = length - 1;
-    ULong p1 = i1 % l1;
-    ULong p2 = p1 + 1;
-    Sweep::Direction dir = (i1 / l1) % 2 ? Sweep::Direction::Left : Sweep::Direction::Right;
-
-    if (dir == Sweep::Direction::Left) {
-      auto tmp = p2;
-      p2 = l1 - p1;
-      p1 = l1 - tmp;
-    }*/
-
-    double deltaEV = state.variance;
-
-    bool converged = false;
-    if ((std::abs(deltaEV) < conv_tolerance) && (state.iteration > 2 * length)) {
-      converged = true;
+    bool converged = (std::abs(state.variance) < conv_tolerance) && (state.iteration > 2 * length);
+    if (converged) {
+      std::cout << "Converged with ev=" << state.variance << " tolerance=" << conv_tolerance << std::endl;
     }
 
     return state.iteration < maxIter && !converged;
