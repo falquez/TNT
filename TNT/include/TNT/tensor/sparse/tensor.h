@@ -116,7 +116,7 @@ namespace TNT::Tensor::Sparse {
     //~Tensor(){}
 
     int writeToFile(const std::string &filename, const std::string &path = "/Tensor/Sparse",
-		    const unsigned int &id = 0);
+                    const unsigned int &id = 0);
 
     Tensor<F> &operator<<=(const std::vector<std::tuple<std::vector<UInt>, F>> &c);
     Tensor<F> &operator<<=(const std::tuple<std::vector<UInt>, std::optional<F>> &c);
@@ -152,6 +152,8 @@ namespace TNT::Tensor::Sparse {
       sub = subscript;
       return *this;
     }
+
+    Tensor<F> &expand(const std::string &eidx, const UInt &edim, bool initialize = true, const int &mod = 7);
 
     Tensor<F> &merge(const std::string &idx);
     Tensor<F> &split(const std::string &idx);

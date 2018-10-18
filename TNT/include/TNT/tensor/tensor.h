@@ -113,6 +113,8 @@ namespace TNT::Tensor {
       return *this;
     }
 
+    Tensor<F> expand(const std::string &eidx, const UInt &edim, bool initialize = true, const int &mod = 7) const;
+
     Tensor<F> &merge(const std::string &idx);
     Tensor<F> &split(const std::string &idx);
 

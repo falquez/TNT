@@ -153,6 +153,46 @@ namespace TNT::Tensor::Sparse {
   }
 
   template <typename F>
+  Tensor<F> &Tensor<F>::expand(const std::string &eidx, const UInt &edim, bool initialize, const int &mod) {
+    std::map<std::string, UInt> idx_map;
+    std::vector<std::string> sub_idx = Util::split(sub, ",");
+    for (UInt i = 0; i < sub_idx.size(); i++)
+      idx_map.emplace(sub_idx[i], i);
+
+    UInt m = idx_map.at(eidx);
+
+    auto ndim = dim;
+    ndim[m] = edim;
+
+    auto nstride = stride;
+    nstride[0] = 1;
+    for (uint i = 1; i < ndim.size(); i++)
+      nstride[i] = ndim[i - 1] * nstride[i - 1];
+
+    UInt ntotalDim = 1;
+    for (const auto &d : ndim)
+      ntotalDim *= d;
+
+    for (UInt i = 0; i < ntotalDim; i++) {
+      if ((rand() % mod) == 0) {
+        auto nidx = convertIndex(nstride, i);
+        nidx[m] += dim[m];
+        data.insert({nidx, (rand() % 100) / 100.0});
+      }
+    }
+
+    dim[m] += edim;
+    totalDim = 1;
+    for (const auto &d : dim)
+      totalDim *= d;
+
+    stride[0] = 1;
+    for (uint i = 1; i < dim.size(); i++)
+      stride[i] = dim[i - 1] * stride[i - 1];
+
+    return *this;
+  }
+  template <typename F>
   Tensor<F> &Tensor<F>::merge(const std::string &mrg) {
     std::map<std::string, UInt> idx_map;
     // std::cout << "Tensor<F>::merge(" << mrg << ")" << std::endl;
