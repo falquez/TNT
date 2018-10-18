@@ -57,20 +57,14 @@ int main(int argc, char **argv) {
   // for (const auto &[name, cr] : config.constraints)
   //  std::cout << "Constraint " << cr.name << " site=" << cr.site << std::endl;
   const auto parameters = config.parameters;
-
   const auto L = config.network.length;
-
-  const unsigned int n_max = 10;
+  const unsigned int n_max = config.hamiltonian.n_max;
 
   for (const auto [p_i, params] : parameters.iterate()) {
 
     const TNT::Configuration::Observables<NumericalType> observables(config.config_file, params);
-
-    const Operator::Sparse::MPO<NumericalType> W0(config, params);
     std::vector<Network::MPS::MPS<NumericalType>> A;
     std::vector<NumericalType> E(n_max);
-
-    // std::cout << "W0=" << W0 << std::endl;
 
     for (unsigned int n = 0; n < n_max; n++) {
 
@@ -101,7 +95,6 @@ int main(int argc, char **argv) {
         std::cout << "Restarting MPS A[" << n << "] from iteration " << state.iteration << std::endl;
         for (unsigned int l = 1; l <= L; l++)
           A[n][l] = Tensor::Tensor<NumericalType>(network_dir + format(l), "/Tensor");
-
       } else {
         std::cout << "Initializing MPS A[" << n << "]" << std::endl;
         A[n].initialize();
@@ -176,17 +169,17 @@ int main(int argc, char **argv) {
             T("s1,s3,a1,a2").SVD({{"s1,a1,a3", "s3,a3,a2"}}, {norm, nsv, config.tolerance("svd")});
 
         double E2 = A[n](W2);
-	double NV = params.at("VAR");
+        double NV = params.at("VAR");
         E[n] = ew;
         state.eigenvalue = ew;
-	state.variance = (E2 - ew * ew) / (NV * L);
+        state.variance = (E2 - ew * ew) / (NV * L);
 
         std::cout << " n=" << n << " ip=" << p_i << " swp=" << state.iteration / L;
         std::cout << " i=" << state.iteration << ", l=" << l << ", r=" << r << ", ";
         std::cout.precision(8);
         for (const auto &[name, v] : params)
           std::cout << name << "=" << v << ", ";
-	std::cout << "ev=" << state.eigenvalue << ", dE=" << E2 - E[n] * E[n] << ", var=" << state.variance;
+        std::cout << "ev=" << state.eigenvalue << ", dE=" << E2 - E[n] * E[n] << ", var=" << state.variance;
         std::cout.precision(std::numeric_limits<double>::max_digits10);
         std::cout << ", w=" << state.eigenvalue / (2 * L * params.at("x"));
         // std::cout << ", d=" << (E[n] - E[0]) / (2 * std::sqrt(params.at("x")));
@@ -209,7 +202,6 @@ int main(int argc, char **argv) {
         }
         // Write observables to text file
         for (const auto &[i_o, obs] : observables.iterate()) {
-          // std::cout << "Writing " << fname << std::endl;
           std::ofstream ofile(output_dir + obs.name + ".tmp.txt");
           auto result = A[n](obs);
           for (const auto &r : result) {

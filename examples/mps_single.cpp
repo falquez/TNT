@@ -53,42 +53,49 @@ int main(int argc, char **argv) {
 
   // Read configuration
   const Configuration::Configuration<NumericalType> config(config_file);
-  // const auto observables = config.observables;
+
   const auto parameters = config.parameters;
-
   const auto L = config.network.length;
-  const auto results_dir = config.directory("results");
-  const auto network_dir = config.directory("network");
-
-  const unsigned int n_max = 10;
+  const unsigned int n_max = config.hamiltonian.n_max;
 
   for (const auto [p_i, params] : parameters.iterate()) {
-    const Operator::MPO<NumericalType> W(config, params);
-    const auto W2 = W * W;
 
     const TNT::Configuration::Observables<NumericalType> observables(config.config_file, params);
-
     std::vector<Network::MPS::MPS<NumericalType>> A;
     std::vector<NumericalType> E(n_max);
 
     for (unsigned int n = 0; n < n_max; n++) {
+      const Operator::MPO<NumericalType> W(config, params);
+      const auto W2 = W * W;
+
+      const auto output_dir = config.directory("results") + "/" + format(n) + "/" + format(p_i) + "/";
+      const auto network_dir = output_dir + config.directory("network") + "/";
+      // Create network output directories
+      boost::filesystem::create_directories(network_dir);
+
       // Create new MPS
       A.push_back(Network::MPS::MPS<NumericalType>(config));
 
-      // Output directory for this parameter set
-      const std::string output_dir = results_dir + "/" + format(n) + "/" + format(p_i) + "/";
-      // Check if already finished
-      if (boost::filesystem::exists(output_dir + "/result.txt"))
-        continue;
-      // Create output directories
-      boost::filesystem::create_directories(output_dir + "/" + network_dir);
+      Network::State state(output_dir + "state.json", config.restart);
+      if (state.restarted) {
+        std::cout << "Restarting MPS A[" << n << "] from iteration " << state.iteration << std::endl;
+        for (unsigned int l = 1; l <= L; l++)
+          A[n][l] = Tensor::Tensor<NumericalType>(network_dir + format(l), "/Tensor");
+      } else {
+        std::cout << "Initializing MPS A[" << n << "]" << std::endl;
+        A[n].initialize();
+        for (unsigned int l = 1; l <= L; l++)
+          A[n][l].writeToFile(network_dir + format(l), "/Tensor");
+      }
 
-      Network::State state(output_dir + "/state.json");
+      // Check if already finished
+      if (boost::filesystem::exists(output_dir + "result.txt"))
+        continue;
 
       const auto [i_l, i_r, i_dir] = A[n].position(state);
 
       // Projection Operators
-      std::vector<Tensor::TensorScalar<NumericalType>> P(n);
+      std::vector<Tensor::TensorScalar<NumericalType>> Pr(n);
 
       // Right and Left Contractions
       // 1 and L are boundary sites
@@ -96,33 +103,30 @@ int main(int argc, char **argv) {
       std::vector<Tensor::Tensor<NumericalType>> RC(L + 1);
 
       // Initialize Right Contractions
-      std::cout << "Initializing Right Contractions" << std::endl;
       RC[L] = Tensor::Tensor<NumericalType>({1, 1, 1}, 1.0);
       for (unsigned int l = L - 1; l >= i_l; l--) {
-        Tensor::Tensor DW(W[l + 1]);
-        RC[l]("b1,a1,a1'") =
-            A[n][l + 1]("s,a1,a2") * DW("b1,b2,s,s'") * RC[l + 1]("b2,a2,a2'") * A[n][l + 1].conjugate()("s',a1',a2'");
+        RC[l]("b1,a1,a1'") = A[n][l + 1]("s,a1,a2") * W[l + 1]("b1,b2,s,s'") * RC[l + 1]("b2,a2,a2'") *
+                             A[n][l + 1].conjugate()("s',a1',a2'");
       }
 
       // Initialize Left Contractions
-      std::cout << "Initializing Left Contractions" << std::endl;
       LC[1] = Tensor::Tensor<NumericalType>({1, 1, 1}, 1.0);
       for (unsigned int l = 1; l < i_r; l++) {
-        Tensor::Tensor DW(W[l]);
         LC[l + 1]("b2,a2,a2'") =
-            A[n][l]("s,a1,a2") * DW("b1,b2,s,s'") * LC[l]("b1,a1,a1'") * A[n][l].conjugate()("s',a1',a2'");
+            A[n][l]("s,a1,a2") * W[l]("b1,b2,s,s'") * LC[l]("b1,a1,a1'") * A[n][l].conjugate()("s',a1',a2'");
       }
 
       // Start sweep loop
       for (const auto [l, r, dir] : A[n].sweep(state)) {
         auto s1 = dir == Network::MPS::Sweep::Direction::Right ? l : r;
         auto s2 = dir == Network::MPS::Sweep::Direction::Right ? r : l;
+
         // Define Eigensolver for Operator LC*W*RC
         Tensor::EigenSolver ES(LC[s1]("b1,a1,a1'") * W[s1]("b1,b2,s1,s1'") * RC[s1]("b2,a2,a2'"));
 
         // Calculate Projection Operators
         for (unsigned int n_i = 0; n_i < n; n_i++)
-          P[n_i] = {A[n_i](A[n], {s1}), -E[n_i]};
+          Pr[n_i] = {A[n_i](A[n], {s1}), -E[n_i]};
 
         // Optimize A[s]
         std::cout << "INFO: Optimize A[" << s1 << "]"
@@ -131,10 +135,8 @@ int main(int argc, char **argv) {
         std::tie(ew, A[n][s1]) = ES({{"s1,a1,a2", "s1',a1',a2'"}})
                                      .useInitial(false)
                                      .setTolerance(config.tolerance("eigenvalue"))
-                                     .optimize(A[n][s1]("s3,a,a2"), P);
+                                     .optimize(A[n][s1]("s3,a,a2"), Pr);
 
-        auto norm = dir == Network::MPS::Sweep::Direction::Right ? Tensor::SVDNorm::left : Tensor::SVDNorm::right;
-        auto DW = dir == Network::MPS::Sweep::Direction::Right ? Tensor::Tensor(W[l]) : Tensor::Tensor(W[r]);
         std::string idxq = dir == Network::MPS::Sweep::Direction::Right ? "a2" : "a1";
         std::string subA = dir == Network::MPS::Sweep::Direction::Right ? "s1,a3,a1" : "s1,a1,a3";
         std::string subB = dir == Network::MPS::Sweep::Direction::Right ? "s1,a2,a1" : "s1,a1,a2";
@@ -145,9 +147,11 @@ int main(int argc, char **argv) {
         auto B = A[n][s2];
         A[n][s2](subA) = B(subB) * R("a3,a2");
 
+        double E2 = A[n](W2);
+        double NV = params.at("VAR");
         E[n] = ew;
         state.eigenvalue = ew;
-        state.variance = (A[n](W2) - ew * ew) / (L * params.at("VAR"));
+        state.variance = (E2 - ew * ew) / (NV * L);
 
         std::cout << "n=" << n << " p=" << p_i << " swp=" << state.iteration / L;
         std::cout << " i=" << state.iteration << ", l=" << l << ", r=" << r << ", ";
@@ -158,18 +162,34 @@ int main(int argc, char **argv) {
         std::cout << std::endl;
 
         // Store solutions to disk
-	A[n][s1].writeToFile(output_dir + network_dir + "/" + format(s1), "/Tensor");
+        A[n][s1].writeToFile(network_dir + format(s1), "/Tensor");
 
         // Update left contraction for next iteration
+        auto w_lr = dir == Network::MPS::Sweep::Direction::Right ? l : r;
         switch (dir) {
         case Network::MPS::Sweep::Direction::Right:
           LC[r]("b2,a2,a2'") =
-              A[n][l]("s,a1,a2") * DW("b1,b2,s,s'") * LC[l]("b1,a1,a1'") * A[n][l].conjugate()("s',a1',a2'");
+              A[n][l]("s,a1,a2") * W[w_lr]("b1,b2,s,s'") * LC[l]("b1,a1,a1'") * A[n][l].conjugate()("s',a1',a2'");
           break;
         case Network::MPS::Sweep::Direction::Left:
           RC[l]("b1,a1,a1'") =
-              A[n][r]("s,a1,a2") * DW("b1,b2,s,s'") * RC[r]("b2,a2,a2'") * A[n][r].conjugate()("s',a1',a2'");
+              A[n][r]("s,a1,a2") * W[w_lr]("b1,b2,s,s'") * RC[r]("b2,a2,a2'") * A[n][r].conjugate()("s',a1',a2'");
           break;
+        }
+        // Write observables to text file
+        for (const auto &[i_o, obs] : observables.iterate()) {
+          std::ofstream ofile(output_dir + obs.name + ".tmp.txt");
+          auto result = A[n](obs);
+          for (const auto &r : result) {
+            for (const auto &s : r.site)
+              ofile << s << " ";
+            ofile.precision(std::numeric_limits<double>::max_digits10);
+            for (const auto &[name, v] : params)
+              ofile << v << " ";
+            ofile << state.eigenvalue << " " << state.variance << " ";
+            ofile << r.value << std::endl;
+          }
+          ofile << std::endl;
         }
       }
 

@@ -120,42 +120,49 @@ int main(int argc, char **argv) {
 
       // Start sweep loop
       for (const auto [l, r, dir] : A[n].sweep(state)) {
-        auto s1 = dir == Network::MPS::Sweep::Direction::Right ? l : r;
-        auto s2 = dir == Network::MPS::Sweep::Direction::Right ? r : l;
 
-        auto LW = LC[s1].sparse();
-        auto RW = RC[s1].sparse();
+        bool do_expansion = false;
+        if (do_expansion) {
+          A[n][l]("s,a1,a2");
 
-        // Define Eigensolver for Operator LC*W*RC
-        Tensor::Sparse::EigenSolver ES(LW("b1,a1,a1'") * W[s1]("b1,b2,s1,s1'") * RW("b2,a2,a2'"));
+        } else {
 
-        // Calculate Projection Operators
-        for (unsigned int n_i = 0; n_i < n; n_i++)
-          Pr[n_i] = {A[n_i](A[n], {s1}), -E[n_i]};
+          auto s1 = dir == Network::MPS::Sweep::Direction::Right ? l : r;
+          auto s2 = dir == Network::MPS::Sweep::Direction::Right ? r : l;
+          auto LW = LC[s1].sparse();
+          auto RW = RC[s1].sparse();
 
-        // Optimize A[s]
-        std::cout << "INFO: Optimize A[" << s1 << "]"
-                  << ", tol=" << config.tolerance("eigenvalue") << std::endl;
-        double ew;
-        std::tie(ew, A[n][s1]) = ES({{"s1,a1,a2", "s1',a1',a2'"}})
-                                     .useInitial()
-                                     .setTolerance(config.tolerance("eigenvalue"))
-                                     .optimize(A[n][s1]("s3,a,a2"), Pr);
+          // Define Eigensolver for Operator LC*W*RC
+          Tensor::Sparse::EigenSolver ES(LW("b1,a1,a1'") * W[s1]("b1,b2,s1,s1'") * RW("b2,a2,a2'"));
 
-        // Normalize A[s1] and reassign to A[s1], A[s2]
-        auto idxq = dir == Network::MPS::Sweep::Direction::Right ? "a2" : "a1";
-        auto subA = dir == Network::MPS::Sweep::Direction::Right ? "s1,a3,a1" : "s1,a1,a3";
-        auto subB = dir == Network::MPS::Sweep::Direction::Right ? "s1,a2,a1" : "s1,a1,a2";
-        auto [T, R] = A[n][s1]("s1,a1,a2").normalize_QRD(idxq);
-        A[n][s1] = T;
-        auto B = A[n][s2];
-        A[n][s2](subA) = B(subB) * R("a3,a2");
+          // Calculate Projection Operators
+          for (unsigned int n_i = 0; n_i < n; n_i++)
+            Pr[n_i] = {A[n_i](A[n], {s1}), -E[n_i]};
 
-        double E2 = A[n](W2);
-        double NV = params.at("VAR");
-        E[n] = ew;
-        state.eigenvalue = ew;
-        state.variance = (E2 - ew * ew) / (NV * L);
+          // Optimize A[s]
+          std::cout << "INFO: Optimize A[" << s1 << "]"
+                    << ", tol=" << config.tolerance("eigenvalue") << std::endl;
+          double ew;
+          std::tie(ew, A[n][s1]) = ES({{"s1,a1,a2", "s1',a1',a2'"}})
+                                       .useInitial()
+                                       .setTolerance(config.tolerance("eigenvalue"))
+                                       .optimize(A[n][s1]("s3,a,a2"), Pr);
+
+          // Normalize A[s1] and reassign to A[s1], A[s2]
+          auto idxq = dir == Network::MPS::Sweep::Direction::Right ? "a2" : "a1";
+          auto subA = dir == Network::MPS::Sweep::Direction::Right ? "s1,a3,a1" : "s1,a1,a3";
+          auto subB = dir == Network::MPS::Sweep::Direction::Right ? "s1,a2,a1" : "s1,a1,a2";
+          auto [T, R] = A[n][s1]("s1,a1,a2").normalize_QRD(idxq);
+          A[n][s1] = T;
+          auto B = A[n][s2];
+          A[n][s2](subA) = B(subB) * R("a3,a2");
+
+          double E2 = A[n](W2);
+          double NV = params.at("VAR");
+          E[n] = ew;
+          state.eigenvalue = ew;
+          state.variance = (E2 - ew * ew) / (NV * L);
+        }
 
         std::cout << "n=" << n << " p=" << p_i << " swp=" << state.iteration / L;
         std::cout << " i=" << state.iteration << ", l=" << l << ", r=" << r << ", ";
@@ -168,7 +175,8 @@ int main(int argc, char **argv) {
         std::cout << std::endl;
 
         // Store solutions to disk
-        A[n][s1].writeToFile(network_dir + format(s1), "/Tensor");
+        A[n][l].writeToFile(network_dir + format(l), "/Tensor");
+        A[n][r].writeToFile(network_dir + format(r), "/Tensor");
 
         // Update left contraction for next iteration
         auto DW = dir == Network::MPS::Sweep::Direction::Right ? Tensor::Tensor(W[l]) : Tensor::Tensor(W[r]);
