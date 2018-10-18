@@ -45,6 +45,7 @@ namespace TNT::Configuration {
 */
   struct Hamiltonian {
     unsigned int dim;
+    unsigned int n_max;
     std::optional<std::string> single_site = {};
     std::vector<std::array<std::string, 2>> nearest;
   };

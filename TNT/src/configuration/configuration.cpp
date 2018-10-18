@@ -48,6 +48,7 @@ namespace TNT::Configuration {
     // Initialize hamiltonian
     auto h_object = j["hamiltonian"];
     hamiltonian.dim = h_object["dim"];
+    hamiltonian.n_max = h_object["n_max"];
     auto h_operator = h_object["operators"];
     if (h_operator.find("single") != h_operator.end()) {
       hamiltonian.single_site = h_operator["single"].get<std::string>();
