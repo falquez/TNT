@@ -17,6 +17,7 @@
  */
 
 #include <algorithm>
+#include <cassert>
 #include <complex>
 #include <iostream>
 
@@ -29,8 +30,7 @@
 namespace TNT::Tensor {
 
   template <typename F>
-  Contraction<F>::Contraction(const Tensor<F> &t)
-      : dims{t.dim}, totalDim{t.totalDim}, strides{t.stride}, subs{t.sub}, data{t.data.get()}, dim_map{} {
+  Contraction<F>::Contraction(const Tensor<F> &t) : dims{t.dim}, subs{t.sub}, data{t.data.get()}, dim_map{} {
 
     std::vector<std::string> idx = Util::split(subs[0], ",");
 
@@ -44,8 +44,8 @@ namespace TNT::Tensor {
     data.push_back(t.data.get());
     subs.push_back(t.sub);
     dims.push_back(t.dim);
-    strides.push_back(t.stride);
-    totalDim.push_back(t.totalDim);
+    // strides.push_back(t.stride);
+    // totalDim.push_back(t.totalDim);
 
     std::vector<std::string> idx = Util::split(subs.back(), ",");
     for (UInt i = 0; i < dims.back().size(); i++)
@@ -55,8 +55,12 @@ namespace TNT::Tensor {
   }
 
   template <typename F>
-  F Contraction<F>::dotProduct() const {
-    return TNT::BLAS::dot<F>(totalDim[0], {data[0], data[1]});
+  Contraction<F>::operator F() const {
+    assert(data.size() == 2);
+
+    auto totalDim = Util::multiply(dims[0]);
+
+    return TNT::BLAS::dot<F>(totalDim, {data[0], data[1]});
   }
 
   template <typename F>

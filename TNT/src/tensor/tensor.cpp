@@ -193,7 +193,7 @@ namespace TNT::Tensor {
     return std::move(T);
   }
 
-  template <typename F>
+  /*template <typename F>
   Tensor<F>::Tensor(const Sparse::Tensor<F> &t) : dim{t.dimension()}, stride(dim.size()), sub{} {
 
     totalDim = Util::multiply(dim);
@@ -210,7 +210,7 @@ namespace TNT::Tensor {
         j += idx[p] * stride[p];
       data[j] = v;
     }
-  }
+  }*/
 
   template <typename F>
   double Tensor<F>::norm2() const {
@@ -220,13 +220,13 @@ namespace TNT::Tensor {
     return std::sqrt(nrm);
   }
 
-  template <typename F>
+  /*template <typename F>
   Sparse::Tensor<F> Tensor<F>::sparse() {
     Sparse::Tensor<F> T(dim);
     T.readFrom(data.get());
 
     return std::move(T);
-  }
+  }*/
 
   template <typename F>
   Tensor<F> &Tensor<F>::operator*=(const Tensor<F> &M) {

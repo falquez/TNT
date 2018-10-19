@@ -17,6 +17,7 @@
  */
 
 #include <algorithm>
+#include <malloc.h>
 #include <memory>
 #include <optional>
 
@@ -26,6 +27,14 @@
 
 #include <hptt/hptt.h>
 #include <tcl/tcl.h>
+
+#include <unistd.h>
+
+unsigned long long getTotalSystemMemory() {
+  long pages = sysconf(_SC_PHYS_PAGES);
+  long page_size = sysconf(_SC_PAGE_SIZE);
+  return pages * page_size;
+}
 
 namespace TNT::Algebra {
 
@@ -48,6 +57,11 @@ namespace TNT::Algebra {
   int tensorMult(F *result, const std::string subscript, const Tensor::Contraction<F> &seq) {
     int err = 0;
     int prev = 0, curr = 0;
+
+    std::cout << "DEBUG: tensorMult(" << subscript << ") <-";
+    for (const auto s : seq.subs)
+      std::cout << "(" << s << ")*";
+    std::cout << std::endl;
 
     std::array<std::unique_ptr<F[]>, 2> buff;
     std::array<std::string, 2> sub;
@@ -83,6 +97,10 @@ namespace TNT::Algebra {
       std::vector<unsigned long long> dim3l(dim3.begin(), dim3.end());
       unsigned long long size3 = Util::multiply<unsigned long long>(dim3l);
 
+      std::cout << "DEBUG: Allocating T(" << sub3 << ") <- T1(" << sub[prev] << ") *T2(" << sub[curr] << ")";
+      // std::cout << " free=" << freemem << " MB=" << freemem / (1E6);
+      std::cout << "size=" << size3 << " MB=" << (size3 * sizeof(F)) / (1E6) << "MB" << std::endl;
+
       buff[curr] = std::make_unique<F[]>(size3);
       tcl::Tensor<F> T3(dim3, buff[curr].get());
 
@@ -112,6 +130,8 @@ namespace TNT::Algebra {
     auto plan = hptt::create_plan(&perm[0], dimA.size(), 1.0, buff[curr].get(), &dimA[0], NULL, 0.0, result, NULL,
 				  hptt::ESTIMATE, Algebra::numThreads);
     plan->execute();
+
+    malloc_trim(0);
 
     return err;
   }

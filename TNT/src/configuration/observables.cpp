@@ -16,6 +16,8 @@
  *  along with this program.  If not, see <http://www.gnu.org/licenses/>.
  */
 
+#include <complex>
+
 #include <TNT/configuration/observables.h>
 #include <TNT/configuration/operator.h>
 

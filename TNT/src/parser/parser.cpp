@@ -59,11 +59,11 @@ namespace TNT::Parser {
 	if (op.size > 1) {
 	  for (unsigned int i = 0; i < op.size; i++) {
 	    Tensor::Sparse::Tensor<double> o(op.file, op.path, i);
-	    O.emplace(name + std::to_string(i + 1), Tensor::Tensor<double>(o));
+	    O.emplace(name + std::to_string(i + 1), Tensor::Tensor<double>(o.dense()));
 	  }
 	} else {
 	  Tensor::Sparse::Tensor<double> o(op.file, op.path);
-	  O.emplace(name, Tensor::Tensor<double>(o));
+	  O.emplace(name, Tensor::Tensor<double>(o.dense()));
 	}
       } else {
         if (op.size > 1) {

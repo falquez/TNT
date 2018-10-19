@@ -167,7 +167,7 @@ namespace TNT::Network::MPS {
 
     T[0] = Tensor::Tensor<F>({1, 1, 1}, 1.0);
     for (unsigned int l = 0; l < length; l++) {
-      auto W = Tensor::Tensor(mpo[l + 1]);
+      auto W = Tensor::Tensor(mpo[l + 1].dense());
       int curr = l % 2;
       int next = (l + 1) % 2;
       Tensor::Tensor<F> _Ac = _A[l].conjugate();

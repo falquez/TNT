@@ -75,10 +75,8 @@ namespace TNT::Tensor::Sparse {
     double ev;
     std::unique_ptr<F[]> buff;
 
-    TNT::Tensor::Tensor<F> T(t1.dim);
-
     int initSize = 0;
-    buff = std::make_unique<F[]>(T.totalDim);
+    buff = std::make_unique<F[]>(t1.size());
 
     if (_useInitial) {
       initSize = 1;
@@ -89,7 +87,8 @@ namespace TNT::Tensor::Sparse {
     options.verbosity = 3;
     err = Algebra::Sparse::tensorEigen(&ev, buff.get(), sub, seq, P, X, options);
 
-    T.data = std::move(buff);
+    TNT::Tensor::Tensor<F> T({t1.dimension(), std::move(buff)});
+    // T.data = std::move(buff);
 
     return std::make_tuple(ev, std::move(T));
   }
@@ -107,24 +106,22 @@ namespace TNT::Tensor::Sparse {
     std::vector<UInt> vec_dim(idx.size());
     for (unsigned int i = 0; i < vec_dim.size(); i++)
       vec_dim[i] = seq.dim_map.at(idx[i]);
-
-    TNT::Tensor::Tensor<F> T(vec_dim);
+    buff = std::make_unique<F[]>(Util::multiply(vec_dim));
 
     int initSize = 0;
     if (_useInitial) {
-      initSize = 1;
       TNT::Tensor::Tensor<F> T0;
       T0(sub[0]) = seq1;
-      buff = std::move(T0.data); // std::make_unique<F[]>(T.totalDim);
-    } else {
-      buff = std::make_unique<F[]>(T.totalDim);
+
+      T0.writeTo(buff.get());
+      initSize = 1;
     }
 
     auto options = Algebra::Options(1, tolerance, initSize, Algebra::Target::smallest, {});
     options.verbosity = 3;
     err = Algebra::Sparse::tensorEigen(&ev, buff.get(), sub, seq, P, X, options);
 
-    T.data = std::move(buff);
+    TNT::Tensor::Tensor<F> T({vec_dim, std::move(buff)});
 
     return std::make_tuple(ev, std::move(T));
   }

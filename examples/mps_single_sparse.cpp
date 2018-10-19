@@ -127,6 +127,7 @@ int main(int argc, char **argv) {
         auto RW = RC[s1].sparse();
 
         // Define Eigensolver for Operator LC*W*RC
+	std::cout << "INFO: Define Eigensolver for  W[" << s1 << "]" << std::endl;
         Tensor::Sparse::EigenSolver ES(LW("b1,a1,a1'") * W[s1]("b1,b2,s1,s1'") * RW("b2,a2,a2'"));
 
         // Calculate Projection Operators
@@ -134,23 +135,29 @@ int main(int argc, char **argv) {
           Pr[n_i] = {A[n_i](A[n], {s1}), -E[n_i]};
 
         // Optimize A[s]
-        std::cout << "INFO: Optimize A[" << s1 << "]"
-                  << ", tol=" << config.tolerance("eigenvalue") << std::endl;
+	std::cout << "INFO: Optimize A[" << s1 << "]"
+		  << " dim=";
+	for (const auto d : A[n][s1].dimension())
+	  std::cout << d << ",";
+	std::cout << ", tol=" << config.tolerance("eigenvalue") << std::endl;
         double ew;
         std::tie(ew, A[n][s1]) = ES({{"s1,a1,a2", "s1',a1',a2'"}})
                                      .useInitial()
                                      .setTolerance(config.tolerance("eigenvalue"))
                                      .optimize(A[n][s1]("s3,a,a2"), Pr);
 
-        // Normalize A[s1] and reassign to A[s1], A[s2]
-        auto idxq = dir == Network::MPS::Sweep::Direction::Right ? "a2" : "a1";
+	// Normalize A[s1] and reassign to A[s1], A[s2]
+	auto idxq = dir == Network::MPS::Sweep::Direction::Right ? "a2" : "a1";
         auto subA = dir == Network::MPS::Sweep::Direction::Right ? "s1,a3,a1" : "s1,a1,a3";
         auto subB = dir == Network::MPS::Sweep::Direction::Right ? "s1,a2,a1" : "s1,a1,a2";
+
+	std::cout << "INFO: Normalize A[" << s1 << "]" << std::endl;
         auto [T, R] = A[n][s1]("s1,a1,a2").normalize_QRD(idxq);
         A[n][s1] = T;
         auto B = A[n][s2];
         A[n][s2](subA) = B(subB) * R("a3,a2");
 
+	std::cout << "INFO: Calculate A[" << s1 << "](W2)" << std::endl;
         double E2 = A[n](W2);
         double NV = params.at("VAR");
         E[n] = ew;
@@ -185,6 +192,8 @@ int main(int argc, char **argv) {
 
         // Write observables to text file
         for (const auto &[i_o, obs] : observables.iterate()) {
+	  std::cout << "INFO: Write Observable " << obs.name << " for A[" << s1 << "]" << std::endl;
+
           std::ofstream ofile(output_dir + obs.name + ".txt");
           auto result = A[n](obs);
           for (const auto &r : result) {

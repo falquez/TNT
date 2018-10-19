@@ -18,6 +18,7 @@
 
 #include <TNT/operator/mpo.h>
 #include <TNT/tensor/contraction.h>
+#include <TNT/tensor/sparse/tensor.h>
 #include <TNT/tensor/tensor.h>
 
 #include "../parser/parser.h"
@@ -45,7 +46,7 @@ namespace TNT::Operator {
   MPO<F>::MPO(const Configuration::Configuration<F> &conf, const std::map<std::string, double> &P) : P{P} {
 
     const auto H = conf.hamiltonian;
-    const auto parser = Parser::Parser<Tensor::Sparse::Tensor<F>, F>(conf.config_file, P);
+    const auto parser = Parser::Parser<Tensor::Tensor<F>, F>(conf.config_file, P);
 
     _length = conf.network.length;
     _dimH = parser.dimH;
@@ -59,7 +60,7 @@ namespace TNT::Operator {
         W[l] = Tensor::Tensor<F>({1, _dimW, _dimH, _dimH});
         // Parse single site
         if (H.single_site) {
-          Tensor::Tensor<F> res = parser.parse(*H.single_site, l);
+	  Tensor::Tensor<F> res = parser.parse(*H.single_site, l);
           for (unsigned int i = 0; i < _dimH; i++)
             for (unsigned int j = 0; j < _dimH; j++)
               W[l][{0, 0, i, j}] = res[{i, j}];

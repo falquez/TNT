@@ -92,8 +92,8 @@ void SparseTensorVecPX(void *x, PRIMME_INT *ldx, void *y, PRIMME_INT *ldy, int *
       // std::cout << "mdata->P[" << n << "]" << mdata->P[n] << std::endl;
       // std::cout << "Xd=" << Xd << std::endl;
       // Ys(mdata->sub[1]) = std::get<0>(mdata->N[c_i])(mdata->subM) * Xs(mdata->sub[0]);
-      TNT::Tensor::Tensor<F> Xd(X);
-      TNT::Tensor::Tensor<F> Yd(Ys);
+      TNT::Tensor::Tensor<F> Xd(X.dense());
+      TNT::Tensor::Tensor<F> Yd(Ys.dense());
       F n = Yd(mdata->sub[0]) * Xd(mdata->sub[0]);
 
       // F d = n - std::get<1>(mdata->N[c_i]);

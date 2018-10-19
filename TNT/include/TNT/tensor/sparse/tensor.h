@@ -27,27 +27,20 @@
 #include <unordered_map>
 #include <vector>
 
-#include <TNT/tensor/vector.h>
+//#include <TNT/tensor/vector.h>
 #include <boost/functional/hash.hpp>
 #include <tbb/concurrent_hash_map.h>
 #include <tbb/concurrent_unordered_map.h>
 
-namespace TNT::Tensor {
+namespace TNT::Tensor::Sparse {
   using UInt = unsigned int;
   using ULong = unsigned long long;
-
   enum SVDNorm { equal, left, right };
   struct SVDOptions {
     SVDNorm norm = SVDNorm::equal;
     UInt nsv = 0;
     double tolerance = 1e-9;
   };
-} // namespace TNT::Tensor
-
-namespace TNT::Tensor::Sparse {
-  using UInt = unsigned int;
-  using ULong = unsigned long long;
-
   const double EPS = 10E-12;
 
   template <typename U>
@@ -152,6 +145,8 @@ namespace TNT::Tensor::Sparse {
       sub = subscript;
       return *this;
     }
+
+    std::tuple<std::vector<UInt>, std::unique_ptr<F[]>> dense() const;
 
     Tensor<F> &expand(const std::string &eidx, const UInt &edim, bool initialize = true, const int &mod = 7);
 

@@ -25,9 +25,20 @@
 #include <memory>
 #include <vector>
 
-#include <TNT/tensor/sparse/tensor.h>
+//#include <TNT/tensor/sparse/tensor.h>
 
 namespace TNT::Tensor {
+
+  using UInt = unsigned int;
+  using ULong = unsigned long long;
+  const double EPS = 10E-12;
+
+  enum SVDNorm { equal, left, right };
+  struct SVDOptions {
+    SVDNorm norm = SVDNorm::equal;
+    UInt nsv = 0;
+    double tolerance = 1e-9;
+  };
 
   template <typename F>
   class Tensor;
@@ -50,16 +61,17 @@ namespace TNT::Tensor {
 
     friend class Contraction<F>;
     friend class EigenSolver<F>;
-    friend class Sparse::EigenSolver<F>;
+    // friend class Sparse::EigenSolver<F>;
 
   public:
     Tensor() : data{nullptr}, dim{}, stride{}, sub{}, totalDim{0} {}
     Tensor(const std::vector<UInt> &dim);
     Tensor(const std::vector<UInt> &dim, const F initial);
-    Tensor(const Sparse::Tensor<F> &t);
+    // Tensor(const Sparse::Tensor<F> &t);
     Tensor(const std::string &filename, const std::string &path, const unsigned int &id = 0);
     Tensor<F>(Tensor<F> &&t) = default;
     Tensor<F>(const Tensor<F> &t);
+    Tensor<F>(std::tuple<std::vector<UInt>, std::unique_ptr<F[]>> &&data);
     Tensor<F> &operator=(const Tensor<F> &t);
 
     Tensor<F> &operator=(Tensor<F> &&t) = default;
@@ -125,15 +137,15 @@ namespace TNT::Tensor {
 
     double norm2() const;
 
-    Sparse::Tensor<F> sparse();
+    // Sparse::Tensor<F> sparse();
 
     Tensor<F> &initialize(const int &mod = 1);
 
     Tensor<F> conjugate() const;
 
-    Tensor<F> &readFrom(const F *source, const double &eps = Sparse::EPS);
-    const Tensor<F> &writeTo(F *target, const double &eps = Sparse::EPS) const;
-    const Tensor<F> &addTo(F *target, const F &alpha = 1.0, const double &eps = Sparse::EPS) const;
+    Tensor<F> &readFrom(const F *source, const double &eps = EPS);
+    const Tensor<F> &writeTo(F *target, const double &eps = EPS) const;
+    const Tensor<F> &addTo(F *target, const F &alpha = 1.0, const double &eps = EPS) const;
 
     // Calculate M_{abc} -> M_{asc} R_{bs}, so that M_{abc}M*_{ab'c} = delta_{bb'}
     // Return R_{bs}

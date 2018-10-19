@@ -22,6 +22,7 @@
 #include <limits>
 #include <vector>
 
+#include "tbb/task_scheduler_init.h"
 #include <TNT/configuration/configuration.h>
 #include <TNT/configuration/observables.h>
 #include <TNT/network/mps/mps.h>
@@ -50,6 +51,8 @@ int main(int argc, char **argv) {
     exit(0);
   }
   std::string config_file(argv[1]);
+
+  tbb::task_scheduler_init init(1);
 
   // Read configuration
   const Configuration::Configuration<NumericalType> config(config_file);
@@ -122,6 +125,7 @@ int main(int argc, char **argv) {
         auto s2 = dir == Network::MPS::Sweep::Direction::Right ? r : l;
 
         // Define Eigensolver for Operator LC*W*RC
+	std::cout << "INFO: Define Eigensolver for  W[" << s1 << "]" << std::endl;
         Tensor::EigenSolver ES(LC[s1]("b1,a1,a1'") * W[s1]("b1,b2,s1,s1'") * RC[s1]("b2,a2,a2'"));
 
         // Calculate Projection Operators
@@ -129,11 +133,14 @@ int main(int argc, char **argv) {
           Pr[n_i] = {A[n_i](A[n], {s1}), -E[n_i]};
 
         // Optimize A[s]
-        std::cout << "INFO: Optimize A[" << s1 << "]"
-                  << ", tol=" << config.tolerance("eigenvalue") << std::endl;
+	std::cout << "INFO: Optimize A[" << n << "][" << s1 << "]"
+		  << " dim=";
+	for (const auto d : A[n][s1].dimension())
+	  std::cout << d << ",";
+	std::cout << ", tol=" << config.tolerance("eigenvalue") << std::endl;
         double ew;
         std::tie(ew, A[n][s1]) = ES({{"s1,a1,a2", "s1',a1',a2'"}})
-                                     .useInitial(false)
+				     .useInitial()
                                      .setTolerance(config.tolerance("eigenvalue"))
                                      .optimize(A[n][s1]("s3,a,a2"), Pr);
 
@@ -142,18 +149,20 @@ int main(int argc, char **argv) {
         std::string subB = dir == Network::MPS::Sweep::Direction::Right ? "s1,a2,a1" : "s1,a1,a2";
 
         // Normalize A[s1] and reassign to A[s1], A[s2]
+	std::cout << "INFO: Normalize A[" << n << "][" << s1 << "]" << std::endl;
         auto [T, R] = A[n][s1]("s1,a1,a2").normalize_QRD(idxq);
         A[n][s1] = T;
         auto B = A[n][s2];
         A[n][s2](subA) = B(subB) * R("a3,a2");
 
-        double E2 = A[n](W2);
-        double NV = params.at("VAR");
+	std::cout << "INFO: Calculate A[" << n << "](W2)" << std::endl;
+	// double E2 = A[n](W2);
+	double NV = params.at("VAR");
         E[n] = ew;
         state.eigenvalue = ew;
-        state.variance = (E2 - ew * ew) / (NV * L);
+	state.variance = (2 * ew * ew) / (NV * L);
 
-        std::cout << "n=" << n << " p=" << p_i << " swp=" << state.iteration / L;
+	std::cout << "INFO: n=" << n << " p=" << p_i << " swp=" << state.iteration / L;
         std::cout << " i=" << state.iteration << ", l=" << l << ", r=" << r << ", ";
         std::cout.precision(std::numeric_limits<double>::max_digits10);
         for (const auto &[name, value] : params)
@@ -162,23 +171,27 @@ int main(int argc, char **argv) {
         std::cout << std::endl;
 
         // Store solutions to disk
+	std::cout << "INFO: Store A[" << n << "][" << s1 << "]" << std::endl;
         A[n][s1].writeToFile(network_dir + format(s1), "/Tensor");
 
         // Update left contraction for next iteration
         auto w_lr = dir == Network::MPS::Sweep::Direction::Right ? l : r;
         switch (dir) {
         case Network::MPS::Sweep::Direction::Right:
+	  std::cout << "INFO: Update LC[" << r << "]" << std::endl;
           LC[r]("b2,a2,a2'") =
               A[n][l]("s,a1,a2") * W[w_lr]("b1,b2,s,s'") * LC[l]("b1,a1,a1'") * A[n][l].conjugate()("s',a1',a2'");
           break;
         case Network::MPS::Sweep::Direction::Left:
+	  std::cout << "INFO: Update RC[" << l << "]" << std::endl;
           RC[l]("b1,a1,a1'") =
               A[n][r]("s,a1,a2") * W[w_lr]("b1,b2,s,s'") * RC[r]("b2,a2,a2'") * A[n][r].conjugate()("s',a1',a2'");
           break;
         }
         // Write observables to text file
-        for (const auto &[i_o, obs] : observables.iterate()) {
-          std::ofstream ofile(output_dir + obs.name + ".tmp.txt");
+	/*for (const auto &[i_o, obs] : observables.iterate()) {
+	  std::cout << "INFO: Store A[" << n << "](" << obs.name << ")" << std::endl;
+	  std::ofstream ofile(output_dir + obs.name + ".txt");
           auto result = A[n](obs);
           for (const auto &r : result) {
             for (const auto &s : r.site)
@@ -190,7 +203,7 @@ int main(int argc, char **argv) {
             ofile << r.value << std::endl;
           }
           ofile << std::endl;
-        }
+	}*/
       }
 
       // Write observables to text file

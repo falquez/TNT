@@ -20,13 +20,23 @@
 #include "../util/util.h"
 #include "algebra.h"
 
-template <typename F>
+/*template <typename F>
 struct TensorData {
   const TNT::Tensor::Contraction<F> &seq;
   std::vector<unsigned int> dimX;
   std::string subX;
   const std::vector<TNT::Tensor::TensorScalar<F>> &P;
   const std::vector<TNT::Tensor::TensorScalar<F>> &X;
+};*/
+
+template <typename F>
+struct TensorData {
+  const TNT::Tensor::Contraction<F> &seq;
+  std::array<std::vector<TNT::Algebra::UInt>, 2> dim;
+  std::array<std::string, 2> sub;
+  // std::string subM;
+  const std::vector<TNT::Tensor::TensorScalar<F>> &P;
+  const std::vector<TNT::Tensor::Sparse::TensorConstraint<F>> &N;
 };
 
 template <typename F>
@@ -35,7 +45,7 @@ void tensorVec(void *x, PRIMME_INT *ldx, void *y, PRIMME_INT *ldy, int *blockSiz
   TensorData<F> *mdata = static_cast<TensorData<F> *>(primme->matrix);
 
   TNT::Tensor::Contraction<F> seq{mdata->seq}; //{*(TNT::Tensor::Contraction<F> *)primme->matrix};
-  seq.data.push_back(nullptr);
+  // seq.data.push_back(nullptr);
 
   *ierr = 0;
   for (int i = 0; i < *blockSize; i++) {

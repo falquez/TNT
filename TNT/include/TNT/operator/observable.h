@@ -19,10 +19,10 @@
 #ifndef _TNT_OPERATOR_OBSERVABLE_H
 #define _TNT_OPERATOR_OBSERVABLE_H
 
-#include <TNT/configuration/operator.h>
-#include <TNT/tensor/tensor.h>
-
+//#include <TNT/configuration/operator.h>
 #include <vector>
+
+#include <TNT/tensor/tensor.h>
 
 namespace TNT::Operator {
   using UInt = unsigned int;
