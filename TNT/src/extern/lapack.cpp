@@ -21,55 +21,61 @@
 namespace TNT::LAPACK {
 
   template <>
-  lapack_int geqrf<double>(lapack_int m, lapack_int n, double *a, lapack_int lda, double *tau,
-                           int matrix_layout) {
+  lapack_int geqrf<double>(lapack_int m, lapack_int n, double *a, lapack_int lda, double *tau, int matrix_layout) {
     return LAPACKE_dgeqrf(matrix_layout, m, n, a, lda, tau);
   }
 
   template <>
-  lapack_int geqrf<std::complex<double>>(lapack_int m, lapack_int n, std::complex<double> *a,
-                                         lapack_int lda, std::complex<double> *tau,
-                                         int matrix_layout) {
+  lapack_int geqrf<std::complex<double>>(lapack_int m, lapack_int n, std::complex<double> *a, lapack_int lda,
+                                         std::complex<double> *tau, int matrix_layout) {
     return LAPACKE_zgeqrf(matrix_layout, m, n, a, lda, tau);
   }
 
   template <>
-  lapack_int gelqf<double>(lapack_int m, lapack_int n, double *a, lapack_int lda, double *tau,
-                           int matrix_layout) {
+  lapack_int gelqf<double>(lapack_int m, lapack_int n, double *a, lapack_int lda, double *tau, int matrix_layout) {
     return LAPACKE_dgelqf(matrix_layout, m, n, a, lda, tau);
   }
 
   template <>
-  lapack_int gelqf<std::complex<double>>(lapack_int m, lapack_int n, std::complex<double> *a,
-                                         lapack_int lda, std::complex<double> *tau,
-                                         int matrix_layout) {
+  lapack_int gelqf<std::complex<double>>(lapack_int m, lapack_int n, std::complex<double> *a, lapack_int lda,
+                                         std::complex<double> *tau, int matrix_layout) {
     return LAPACKE_zgelqf(matrix_layout, m, n, a, lda, tau);
   }
 
   template <>
-  lapack_int ungqr<double>(lapack_int m, lapack_int n, lapack_int k, double *a, lapack_int lda,
-                           double *tau, int matrix_layout) {
+  lapack_int ungqr<double>(lapack_int m, lapack_int n, lapack_int k, double *a, lapack_int lda, double *tau,
+                           int matrix_layout) {
     return LAPACKE_dorgqr(matrix_layout, m, n, k, a, lda, tau);
   }
 
   template <>
-  lapack_int ungqr<std::complex<double>>(lapack_int m, lapack_int n, lapack_int k,
-                                         std::complex<double> *a, lapack_int lda,
-                                         std::complex<double> *tau, int matrix_layout) {
+  lapack_int ungqr<std::complex<double>>(lapack_int m, lapack_int n, lapack_int k, std::complex<double> *a,
+                                         lapack_int lda, std::complex<double> *tau, int matrix_layout) {
     return LAPACKE_zungqr(matrix_layout, m, n, k, a, lda, tau);
   }
 
   template <>
-  lapack_int unglq<double>(lapack_int m, lapack_int n, lapack_int k, double *a, lapack_int lda,
-                           double *tau, int matrix_layout) {
+  lapack_int unglq<double>(lapack_int m, lapack_int n, lapack_int k, double *a, lapack_int lda, double *tau,
+                           int matrix_layout) {
     return LAPACKE_dorglq(matrix_layout, m, n, k, a, lda, tau);
   }
 
   template <>
-  lapack_int unglq<std::complex<double>>(lapack_int m, lapack_int n, lapack_int k,
-                                         std::complex<double> *a, lapack_int lda,
-                                         std::complex<double> *tau, int matrix_layout) {
+  lapack_int unglq<std::complex<double>>(lapack_int m, lapack_int n, lapack_int k, std::complex<double> *a,
+                                         lapack_int lda, std::complex<double> *tau, int matrix_layout) {
     return LAPACKE_zunglq(matrix_layout, m, n, k, a, lda, tau);
   }
 
+  template <>
+  lapack_int gesdd<double>(char jobz, lapack_int m, lapack_int n, double *a, lapack_int lda, double *s, double *u,
+                           lapack_int ldu, double *vt, lapack_int ldvt, int matrix_layout) {
+    return LAPACKE_dgesdd(matrix_layout, jobz, m, n, a, lda, s, u, ldu, vt, ldvt);
+  }
+
+  template <>
+  lapack_int gesdd<std::complex<double>>(char jobz, lapack_int m, lapack_int n, std::complex<double> *a, lapack_int lda,
+                                         double *s, std::complex<double> *u, lapack_int ldu, std::complex<double> *vt,
+                                         lapack_int ldvt, int matrix_layout) {
+    return LAPACKE_zgesdd(matrix_layout, jobz, m, n, a, lda, s, u, ldu, vt, ldvt);
+  }
 } // namespace TNT::LAPACK

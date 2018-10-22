@@ -39,6 +39,10 @@ namespace TNT::LAPACK {
   lapack_int unglq(lapack_int m, lapack_int n, lapack_int k, F *a, lapack_int lda, F *tau,
                    int matrix_layout = LAPACK_COL_MAJOR);
 
+  template <typename F>
+  lapack_int gesdd(char jobz, lapack_int m, lapack_int n, F *a, lapack_int lda, double *s, F *u, lapack_int ldu, F *vt,
+                   lapack_int ldvt, int matrix_layout = LAPACK_COL_MAJOR);
+
 } // namespace TNT::LAPACK
 
 #endif //_TNT_LAPACK_H

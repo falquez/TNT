@@ -24,7 +24,7 @@
 
 namespace TNT::BLAS {
   template <typename F>
-  F dot(const int &n, const std::array<F *, 2> data);
+  F dot(const int &n, const std::array<const F *, 2> data);
 
 } // namespace TNT::BLAS
 
