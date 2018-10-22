@@ -54,6 +54,8 @@ add_executable(
   testTNT
   test/main.cpp
   test/tensor/tensor.cpp
+  test/tensor/svd.cpp
+
 )
 target_link_libraries(testTNT TNT)
 add_test(NAME test COMMAND testTNT)
