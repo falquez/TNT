@@ -105,13 +105,17 @@ namespace TNT::Algebra {
   template <typename F>
   int tensorSVD(int idx, const std::vector<UInt> &dim, F *data, F *side, const Options &options = Options{});
 
-  template <typename F>
-  int tensorSVD(const std::vector<UInt> &dim, const std::array<std::vector<UInt>, 2> &idx, double *svals, F *svecs,
-                F *data, const Options &options);
+  // template <typename F>
+  // int tensorSVD(const std::vector<UInt> &dim, const std::array<std::vector<UInt>, 2> &idx, double *svals, F *svecs,
+  //              F *data, const Options &options = Options{});
 
   template <typename F>
-  int tensorSVD2(const std::vector<UInt> &dim, const std::array<std::vector<UInt>, 2> &idx, double *svals, F *svecs,
-                 F *data, const Options &options);
+  int tensorSVD(const std::vector<UInt> &dim, const std::array<std::vector<UInt>, 2> &idx, double *svals, F *svecs,
+                const Tensor::Contraction<F> &seq, const Options &options = Options{});
+
+  template <typename F>
+  int tensorSVD(const std::vector<UInt> &dim, const std::array<std::vector<UInt>, 2> &idx, double *svals, F *svecs,
+                F *data, const Options &options = Options{});
 
 } // namespace TNT::Algebra
 
