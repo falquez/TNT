@@ -44,9 +44,6 @@ namespace TNT::Tensor {
     std::vector<std::string> subs;
     std::vector<F *> data;
     std::map<std::string, UInt> dim_map;
-    // std::vector<UInt> totalDim;
-
-    // std::vector<std::vector<UInt>> strides;
   };
 
   template <typename F>

@@ -35,7 +35,7 @@ namespace TNT::Network::MPS {
 
     _A = std::vector<Tensor::Tensor<F>>(length);
 
-    unsigned int lDim = 1;
+    /*unsigned int lDim = 1;
     for (ULong l = 0; l < length / 2; l++) {
       unsigned int rDim = std::min(lDim * dimH, dimB);
       _A[l] = Tensor::Tensor<F>({dimH, lDim, rDim});
@@ -50,7 +50,7 @@ namespace TNT::Network::MPS {
     for (ULong l = 0; l < _A.size(); l++) {
       _A[l].initialize();
       _A[l].normalize_QRD(1);
-    }
+    }*/
   }
 
   template <typename F>

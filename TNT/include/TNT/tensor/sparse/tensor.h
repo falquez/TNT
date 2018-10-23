@@ -82,12 +82,6 @@ namespace TNT::Tensor::Sparse {
                       const std::array<const Tensor<F> *, 2> &t);
 
   template <typename F>
-  std::ostream &operator<<(std::ostream &out, const Tensor<F> &T);
-
-  // template <typename F>
-  // int writeToFile(const Tensor<F> &tensor, const std::string &filename, const std::string &path = "/Tensor/Sparse");
-
-  template <typename F>
   class Tensor {
     ConcurrentHashMap<std::vector<UInt>, F> data;
     std::vector<UInt> dim;
@@ -212,6 +206,9 @@ namespace TNT::Tensor::Sparse {
     friend Tensor<F> contract2<>(const std::string subscript_r, std::vector<UInt> dim_r,
                                  const std::array<const Tensor<F> *, 2> &t);
   };
+
+  template <typename F>
+  std::ostream &operator<<(std::ostream &out, const Tensor<F> &T);
 
   template <typename F>
   Tensor<F> IdentityMatrix(UInt d);
