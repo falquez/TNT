@@ -153,6 +153,16 @@ namespace TNT::Tensor::Sparse {
   }
 
   template <typename F>
+  std::tuple<std::vector<UInt>, std::unique_ptr<F[]>> Tensor<F>::dense() const {
+
+    std::unique_ptr<F[]> p;
+    p = std::make_unique<F[]>(totalDim);
+
+    writeTo(p.get());
+    return {dim, std::move(p)};
+  }
+
+  template <typename F>
   Tensor<F> &Tensor<F>::expand(const std::string &eidx, const UInt &edim, bool initialize, const int &mod) {
     std::map<std::string, UInt> idx_map;
     std::vector<std::string> sub_idx = Util::split(sub, ",");

@@ -48,7 +48,7 @@ namespace TNT::Tensor {
   class EigenSolver;
 
   template <typename F>
-  using TensorScalar = std::tuple<Tensor<F>, F>;
+  using TensorScalar = std::tuple<Tensor<F>, std::vector<F>>;
 
   template <typename F>
   class Tensor {
@@ -85,6 +85,8 @@ namespace TNT::Tensor {
     Tensor<F> operator-() const;
     Tensor<F> operator*(const F &c) const;
     Contraction<F> operator*(const Tensor<F> &rhs) const;
+
+    F dot(const F *data) const;
 
     int writeToFile(const std::string &filename, const std::string &path = "/Tensor", const unsigned int &id = 0) const;
 
@@ -162,6 +164,9 @@ namespace TNT::Tensor {
      */
     std::tuple<Tensor<F>, Tensor<F>> SVD(std::array<std::string, 2> subscript,
                                          const SVDOptions &options = SVDOptions{}) const;
+
+    std::tuple<Tensor<F>, Tensor<F>> SVD2(std::array<std::string, 2> subscript,
+                                          const SVDOptions &options = SVDOptions{}) const;
 
     std::tuple<Tensor<F>, Tensor<F>> SVD(std::array<std::string, 2> subscript, const Tensor<F> &left,
                                          const Tensor<F> &right, const SVDOptions &options = SVDOptions{}) const;
