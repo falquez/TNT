@@ -40,6 +40,7 @@ namespace TNT::Operator {
     UInt _dimW;
     UInt _dimH;
     UInt _length;
+    std::vector<UInt> dim;
     std::map<std::string, double> P;
     std::vector<Tensor::Tensor<F>> W;
     MPO(){};
@@ -53,6 +54,8 @@ namespace TNT::Operator {
     // then merge b1''=(b1,b1') b2''=(b2,b2') to W("b1'',b2'',a1,a2'") =
     // W("(b1,b1'),(b2,b2'),a1,a2'")
     MPO<F> operator*(const MPO<F> &rhs) const;
+
+    MPO<F> &compress(const double &tolerance = 1E-08);
 
     UInt dimH() const { return _dimH; }
 

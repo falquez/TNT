@@ -276,7 +276,8 @@ namespace TNT::Algebra {
     }
     std::cout << "}" << std::endl;*/
 
-    auto ret = TNT::LAPACK::gesdd<F>('A', dimM, dimN, A.get(), dimM, svals, svecs, dimM, svecs + dimM * dimM, dimN);
+    auto ret = TNT::LAPACK::gesdd<F>(options.lapack_jobz, dimM, dimN, A.get(), dimM, svals, svecs, dimM,
+				     svecs + dimM * dimM, dimN);
 
     unsigned int nvecs = 0;
     for (nvecs = 0; std::abs(svals[nvecs]) > options.tolerance; nvecs++)

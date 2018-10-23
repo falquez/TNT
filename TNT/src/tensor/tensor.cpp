@@ -458,21 +458,22 @@ namespace TNT::Tensor {
     UInt dimM = Util::multiply(Util::selectU(dim, links[0]));
     UInt dimN = Util::multiply(Util::selectU(dim, links[1]));
 
-    // std::unique_ptr<double[]> svals = std::make_unique<double[]>(svdopts.nsv);
-    // std::unique_ptr<F[]> svecs = std::make_unique<F[]>((dimM + dimN) * svdopts.nsv);
+    std::cout << "dimM=" << dimM << " dimN=" << dimN << " nsv=" << svdopts.nsv << std::endl;
+    std::unique_ptr<double[]> svals = std::make_unique<double[]>(svdopts.nsv);
+    std::unique_ptr<F[]> svecs = std::make_unique<F[]>((dimM + dimN) * svdopts.nsv);
 
-    std::unique_ptr<double[]> svals = std::make_unique<double[]>(dimM);
-    std::unique_ptr<F[]> svecs = std::make_unique<F[]>(dimM * dimM + dimN * dimN);
+    // std::unique_ptr<double[]> svals = std::make_unique<double[]>(dimM);
+    // std::unique_ptr<F[]> svecs = std::make_unique<F[]>(dimM * dimM + dimN * dimN);
 
     double anorm = norm2();
     auto opts = Algebra::Options(svdopts.nsv, svdopts.tolerance, anorm, Algebra::Target::largest);
 
-    UInt nvecs = Algebra::tensorSVD2<F>(dim, links, svals.get(), svecs.get(), data.get(), opts);
+    UInt nvecs = Algebra::tensorSVD<F>(dim, links, svals.get(), svecs.get(), data.get(), opts);
 
     std::unique_ptr<F[]> lvecs = std::make_unique<F[]>(dimM * nvecs);
     std::unique_ptr<F[]> rvecs = std::make_unique<F[]>(dimN * nvecs);
 
-    UInt ldM = dimM; // nvecs
+    UInt ldM = nvecs;
     switch (svdopts.norm) {
     case SVDNorm::equal:
       for (UInt n = 0; n < nvecs; n++) {
@@ -580,6 +581,8 @@ namespace TNT::Tensor {
 
     // std::unique_ptr<double[]> svals = std::make_unique<double[]>(svdopts.nsv);
     // std::unique_ptr<F[]> svecs = std::make_unique<F[]>((dimM + dimN) * svdopts.nsv);
+    std::cout << "dimM=" << dimM << " dimN=" << dimN << " nsv=" << svdopts.nsv;
+    std::cout << " size=" << (dimM * dimM + dimN * dimN) * sizeof(double) / 1E06 << std::endl;
 
     std::unique_ptr<double[]> svals = std::make_unique<double[]>(dimM);
     std::unique_ptr<F[]> svecs = std::make_unique<F[]>(dimM * dimM + dimN * dimN);

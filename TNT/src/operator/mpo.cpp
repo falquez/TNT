@@ -33,7 +33,7 @@ namespace TNT::Operator {
    *        2
    */
   template <typename F>
-  MPO<F>::MPO(const UInt dimW, const UInt dimH, const UInt length) : _dimW{dimW}, _dimH{dimH}, _length{length} {
+  MPO<F>::MPO(const UInt dimW, const UInt dimH, const UInt length) : _dimW{dimW}, _dimH{dimH}, _length{length}, dim(4) {
     W = std::vector<Tensor::Tensor<F>>(_length);
 
     W[0] = Tensor::Tensor<F>({1, dimW, dimH, dimH});
@@ -147,6 +147,21 @@ namespace TNT::Operator {
       result.W[l]("b1'',b2,b2',a1,a2'").merge("b2,b2'");
     }
     return result;
+  }
+
+  template <typename F>
+  MPO<F> &MPO<F>::compress(const double &tolerance) {
+
+    for (unsigned int l = 0; l < _length - 1; l++) {
+      unsigned int r = l + 1;
+      Tensor::Tensor<F> T;
+      T("b1,b2,a1,a1',a2,a2'") = W[l]("b1,b,a1,a1'") * W[r]("b,b2,a2,a2'");
+
+      std::tie(W[l], W[r]) =
+	  T("b1,b2,a1,a1',a2,a2'").SVD2({{"b1,b,a1,a1'", "b,b2,a2,a2'"}}, {Tensor::SVDNorm::equal, _dimW, tolerance});
+    }
+
+    return *this;
   }
 
   template <typename F>

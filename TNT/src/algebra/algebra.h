@@ -44,6 +44,7 @@ namespace TNT::Algebra {
     std::vector<double> targets = {};
     UInt maxIter = 1000;
     UInt verbosity = 0;
+    char lapack_jobz = 'A';
 
     Options() {}
     Options(const UInt &nv) : nv{nv} {}

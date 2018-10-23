@@ -69,7 +69,14 @@ int main(int argc, char **argv) {
 
     for (unsigned int n = 0; n < n_max; n++) {
       const Operator::MPO<NumericalType> W(config, params);
+
+      std::cout << "Calculate W2" << std::endl;
       const auto W2 = W * W;
+      std::cout << "Calculate W2c" << std::endl;
+      const auto W2c = (W * W).compress();
+
+      std::cout << "W2=" << W2 << std::endl;
+      std::cout << "W2c=" << W2c << std::endl;
 
       const auto output_dir = config.directory("results") + "/" + format(n) + "/" + format(p_i) + "/";
       const auto network_dir = output_dir + config.directory("network") + "/";
