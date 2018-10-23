@@ -108,6 +108,10 @@ namespace TNT::Algebra {
   int tensorSVD(const std::vector<UInt> &dim, const std::array<std::vector<UInt>, 2> &idx, double *svals, F *svecs,
                 F *data, const Options &options);
 
+  template <typename F>
+  int tensorSVD2(const std::vector<UInt> &dim, const std::array<std::vector<UInt>, 2> &idx, double *svals, F *svecs,
+                 F *data, const Options &options);
+
 } // namespace TNT::Algebra
 
 #endif //_TNT_ALGEBRA_H

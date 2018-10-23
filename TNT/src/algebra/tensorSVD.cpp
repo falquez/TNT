@@ -18,6 +18,7 @@
 
 #include <numeric>
 
+#include "../extern/lapack.h"
 #include "../extern/primme.h"
 #include "../util/util.h"
 #include "algebra.h"
@@ -27,8 +28,7 @@
 
 template <typename F>
 struct MatVecData {
-  MatVecData(F *data, const std::array<std::vector<int>, 3> &dim,
-             const std::array<std::vector<int>, 3> &idx)
+  MatVecData(F *data, const std::array<std::vector<int>, 3> &dim, const std::array<std::vector<int>, 3> &idx)
       : data(data), dim(dim) {
     subscript[0] = TNT::Util::stringify(idx[0]);
     subscript[1] = TNT::Util::stringify(idx[1]);
@@ -91,8 +91,7 @@ namespace TNT::Algebra {
     std::iota(std::begin(idxA), std::end(idxA), 0);
     std::vector<int> idxB = {idx};
     std::vector<int> idxC(dim.size() - 1);
-    auto it =
-        std::copy_if(idxA.begin(), idxA.end(), idxC.begin(), [idx](int i) { return i != idx; });
+    auto it = std::copy_if(idxA.begin(), idxA.end(), idxC.begin(), [idx](int i) { return i != idx; });
 
     MatVecData<F> mdata{data, {dimA, dimB, dimC}, {idxA, idxB, idxC}};
 
@@ -121,8 +120,7 @@ namespace TNT::Algebra {
     /* Allocate space for converged Ritz values and residual norms */
     std::unique_ptr<double[]> rnorm = std::make_unique<double[]>(primme_svds.numSvals);
     std::unique_ptr<double[]> svals = std::make_unique<double[]>(primme_svds.numSvals);
-    std::unique_ptr<F[]> svecs =
-        std::make_unique<F[]>((primme_svds.n + primme_svds.m) * primme_svds.numSvals);
+    std::unique_ptr<F[]> svecs = std::make_unique<F[]>((primme_svds.n + primme_svds.m) * primme_svds.numSvals);
 
     /* Call primme_svds  */
     primme_svds.printLevel = 4;
@@ -139,8 +137,8 @@ namespace TNT::Algebra {
     std::iota(std::begin(idx_tr), std::end(idx_tr), 0);
     idx_tr.insert(idx_tr.begin(), dim.size() - 1);
 
-    auto plan = hptt::create_plan(idx_tr, idx_tr.size(), 1.0, svecs.get(), dim_tr, {}, 0.0, data,
-                                  {}, hptt::ESTIMATE, 1);
+    auto plan =
+        hptt::create_plan(idx_tr, idx_tr.size(), 1.0, svecs.get(), dim_tr, {}, 0.0, data, {}, hptt::ESTIMATE, 1);
     plan->execute();
 
     // Copy the right singular vectors V_i to side;
@@ -153,8 +151,8 @@ namespace TNT::Algebra {
   }
 
   template <typename F>
-  int tensorSVD(const std::vector<UInt> &dim, const std::array<std::vector<UInt>, 2> &idx,
-                double *svals, F *svecs, F *data, const Options &options) {
+  int tensorSVD(const std::vector<UInt> &dim, const std::array<std::vector<UInt>, 2> &idx, double *svals, F *svecs,
+                F *data, const Options &options) {
     int err = 0;
 
     std::unique_ptr<double[]> rnorm;
@@ -206,8 +204,7 @@ namespace TNT::Algebra {
 
     /* Set method to solve the singular value problem and
        the underneath eigenvalue problem (optional) */
-    primme_svds_set_method(primme_svds_default, PRIMME_DEFAULT_METHOD, PRIMME_DEFAULT_METHOD,
-                           &primme_svds);
+    primme_svds_set_method(primme_svds_default, PRIMME_DEFAULT_METHOD, PRIMME_DEFAULT_METHOD, &primme_svds);
 
     /* Call primme_svds  */
     /* Allocate space for converged Ritz values and residual norms */
@@ -223,7 +220,7 @@ namespace TNT::Algebra {
 
     if (options.verbosity > 0) {
       primme_svds_display_params(primme_svds);
-      primme_svds.printLevel = 4;
+      primme_svds.printLevel = options.verbosity;
     }
 
     err = PRIMME::calculate_svds_primme<F>(svals, svecs, rnorm.get(), &primme_svds);
@@ -237,20 +234,109 @@ namespace TNT::Algebra {
 
     return nvecs;
   }
+
+  template <typename F>
+  int tensorSVD2(const std::vector<UInt> &dim, const std::array<std::vector<UInt>, 2> &links, double *svals, F *svecs,
+                 F *data, const Options &options) {
+
+    int err = 0;
+    std::vector<UInt> links_tr;
+
+    UInt dimM = Util::multiply(Util::selectU(dim, links[0]));
+    UInt dimN = Util::multiply(Util::selectU(dim, links[1]));
+
+    std::unique_ptr<F[]> A = std::make_unique<F[]>(dimM * dimN);
+
+    links_tr.insert(std::end(links_tr), std::begin(links[0]), std::end(links[0]));
+    links_tr.insert(std::end(links_tr), std::begin(links[1]), std::end(links[1]));
+
+    std::cout << "tensorSVD2 dimM=" << dimM << ", dimN=" << dimN << " dim=(";
+    for (const auto &d : dim)
+      std::cout << d << ",";
+    std::cout << ") links[0]=(";
+    for (const auto &d : links[0])
+      std::cout << d << ",";
+    std::cout << ") links[1]=(";
+    for (const auto &d : links[1])
+      std::cout << d << ",";
+    std::cout << ") links_tr=(";
+    for (const auto &d : links_tr)
+      std::cout << d << ",";
+    std::cout << ")" << std::endl;
+
+    err = Algebra::transpose(dim, links_tr, data, A.get());
+
+    /*std::cout << "A={";
+    for (int i = 0; i < dimM; i++) {
+      std::cout << "{";
+      for (int j = 0; j < dimN; j++) {
+        std::cout << A[i + j * dimM] << ", ";
+      }
+      std::cout << "}," << std::endl;
+    }
+    std::cout << "}" << std::endl;*/
+
+    auto ret = TNT::LAPACK::gesdd<F>('A', dimM, dimN, A.get(), dimM, svals, svecs, dimM, svecs + dimM * dimM, dimN);
+
+    unsigned int nvecs = 0;
+    for (nvecs = 0; std::abs(svals[nvecs]) > options.tolerance; nvecs++)
+      ;
+
+    // for (int i = 0; i < dimM; i++)
+    //  std::cout << "[" << i << "]=" << svals[i] << ", ";
+    std::cout << "nvecs=" << nvecs << " options.nv=" << options.nv << std::endl;
+
+    /*std::cout << "U={";
+    for (int i = 0; i < dimM; i++) {
+      std::cout << "{";
+      for (int j = 0; j < dimM; j++) {
+        std::cout << svecs[i + j * dimM] << ", ";
+      }
+      std::cout << "}," << std::endl;
+    }
+    std::cout << "}" << std::endl;
+
+    std::cout << "V={";
+    for (int i = 0; i < dimN; i++) {
+      std::cout << "{";
+      for (int j = 0; j < dimN; j++) {
+        std::cout << svecs[dimM * dimM + i + j * dimN] << ", ";
+      }
+      std::cout << "}," << std::endl;
+    }
+    std::cout << "}" << std::endl;*/
+
+    /*std::unique_ptr<F[]> lvecs = std::make_unique<F[]>(dimM * nvecs);
+    std::unique_ptr<F[]> rvecs = std::make_unique<F[]>(dimN * nvecs);
+
+    for (UInt n = 0; n < nvecs; n++) {
+      for (UInt i = 0; i < dimM; i++)
+        lvecs[n * dimM + i] = svecs[n * dimM + i]; // * std::sqrt(svals[n]);
+      for (UInt i = 0; i < dimN; i++)
+        rvecs[n * dimN + i] = svecs[dimM * dimM + i * dimN + n]; // * std::sqrt(svals[n]);
+    }*/
+
+    return std::min(nvecs, options.nv);
+  }
+
 } // namespace TNT::Algebra
 
-template int TNT::Algebra::tensorSVD<double>(const int idx, const std::vector<int> &dim,
-                                             double *data, double *side, const Options &options);
-template int TNT::Algebra::tensorSVD<std::complex<double>>(const int idx,
-                                                           const std::vector<int> &dim,
-                                                           std::complex<double> *data,
-                                                           std::complex<double> *side,
+template int TNT::Algebra::tensorSVD<double>(const int idx, const std::vector<int> &dim, double *data, double *side,
+                                             const Options &options);
+template int TNT::Algebra::tensorSVD<std::complex<double>>(const int idx, const std::vector<int> &dim,
+                                                           std::complex<double> *data, std::complex<double> *side,
                                                            const Options &options);
 
-template int TNT::Algebra::tensorSVD<double>(const std::vector<UInt> &dim,
-                                             const std::array<std::vector<UInt>, 2> &idx,
-                                             double *svals, double *svecs, double *data,
-                                             const Options &options);
-template int TNT::Algebra::tensorSVD<std::complex<double>>(
-    const std::vector<UInt> &dim, const std::array<std::vector<UInt>, 2> &idx, double *svals,
-    std::complex<double> *svecs, std::complex<double> *data, const Options &options);
+template int TNT::Algebra::tensorSVD<double>(const std::vector<UInt> &dim, const std::array<std::vector<UInt>, 2> &idx,
+                                             double *svals, double *svecs, double *data, const Options &options);
+template int TNT::Algebra::tensorSVD<std::complex<double>>(const std::vector<UInt> &dim,
+                                                           const std::array<std::vector<UInt>, 2> &idx, double *svals,
+                                                           std::complex<double> *svecs, std::complex<double> *data,
+                                                           const Options &options);
+
+template int TNT::Algebra::tensorSVD2<double>(const std::vector<UInt> &dim, const std::array<std::vector<UInt>, 2> &idx,
+                                              double *svals, double *svecs, double *data, const Options &options);
+template int TNT::Algebra::tensorSVD2<std::complex<double>>(const std::vector<UInt> &dim,
+                                                            const std::array<std::vector<UInt>, 2> &idx, double *svals,
+                                                            std::complex<double> *svecs, std::complex<double> *data,
+                                                            const Options &options);

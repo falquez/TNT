@@ -75,7 +75,7 @@ void SparseTensorVecPX(void *x, PRIMME_INT *ldx, void *y, PRIMME_INT *ldy, int *
       // std::cout << "mdata->P[" << n << "]" << mdata->P[n] << std::endl;
       // std::cout << "Xd=" << Xd << std::endl;
       F c = std::get<0>(mdata->P[n])(mdata->sub[0]) * Xd(mdata->sub[0]);
-      std::get<0>(mdata->P[n]).conjugate().addTo((F *)y + (*ldy) * i, std::get<1>(mdata->P[n]) * c);
+      std::get<0>(mdata->P[n]).conjugate().addTo((F *)y + (*ldy) * i, std::get<1>(mdata->P[n])[0] * c);
     }
 
     for (unsigned int c_i = 0; c_i < nconsr; c_i++) {

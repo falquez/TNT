@@ -40,7 +40,7 @@ namespace TNT::Algebra {
 
   template <typename F>
   int tensorMult(const std::array<std::vector<int>, 3> &dims, const std::array<std::string, 3> &subscripts,
-		 const std::array<F *, 3> &data, const double &gamma) {
+                 const std::array<F *, 3> &data, const double &gamma) {
     int err = 0;
 
     std::array<tcl::Tensor<F>, 3> T;
@@ -58,10 +58,10 @@ namespace TNT::Algebra {
     int err = 0;
     int prev = 0, curr = 0;
 
-    std::cout << "DEBUG: tensorMult(" << subscript << ") <-";
-    for (const auto s : seq.subs)
-      std::cout << "(" << s << ")*";
-    std::cout << std::endl;
+    // std::cout << "DEBUG: tensorMult(" << subscript << ") <-";
+    // for (const auto s : seq.subs)
+    //  std::cout << "(" << s << ")*";
+    // std::cout << std::endl;
 
     std::array<std::unique_ptr<F[]>, 2> buff;
     std::array<std::string, 2> sub;
@@ -88,7 +88,7 @@ namespace TNT::Algebra {
 
       std::vector<std::string> idx3;
       std::set_symmetric_difference(idx[prev].begin(), idx[prev].end(), idx[curr].begin(), idx[curr].end(),
-				    std::back_inserter(idx3));
+                                    std::back_inserter(idx3));
       std::string sub3 = Util::concat(idx3, ",");
 
       std::vector<int> dim3(idx3.size());
@@ -97,9 +97,10 @@ namespace TNT::Algebra {
       std::vector<unsigned long long> dim3l(dim3.begin(), dim3.end());
       unsigned long long size3 = Util::multiply<unsigned long long>(dim3l);
 
-      std::cout << "DEBUG: Allocating T(" << sub3 << ") <- T1(" << sub[prev] << ") *T2(" << sub[curr] << ")";
-      // std::cout << " free=" << freemem << " MB=" << freemem / (1E6);
-      std::cout << "size=" << size3 << " MB=" << (size3 * sizeof(F)) / (1E6) << "MB" << std::endl;
+      // std::cout << "DEBUG: Allocating T(" << sub3 << ") <- T1(" << sub[prev] << ") *T2(" << sub[curr] << ") dim=(";
+      // for (const auto c : idx3)
+      //  std::cout << seq.dim_map.at(c) << ",";
+      // std::cout << ") size=" << size3 << " MB=" << (size3 * sizeof(F)) / (1E6) << "MB" << std::endl;
 
       buff[curr] = std::make_unique<F[]>(size3);
       tcl::Tensor<F> T3(dim3, buff[curr].get());
@@ -128,7 +129,7 @@ namespace TNT::Algebra {
 
     // Permute result
     auto plan = hptt::create_plan(&perm[0], dimA.size(), 1.0, buff[curr].get(), &dimA[0], NULL, 0.0, result, NULL,
-				  hptt::ESTIMATE, Algebra::numThreads);
+                                  hptt::ESTIMATE, Algebra::numThreads);
     plan->execute();
 
     malloc_trim(0);
@@ -139,13 +140,13 @@ namespace TNT::Algebra {
 
 template int TNT::Algebra::tensorMult<double>(const std::array<std::vector<int>, 3> &dims,
                                               const std::array<std::string, 3> &subscripts,
-					      const std::array<double *, 3> &data, const double &gamma);
+                                              const std::array<double *, 3> &data, const double &gamma);
 template int TNT::Algebra::tensorMult<std::complex<double>>(const std::array<std::vector<int>, 3> &dims,
-							    const std::array<std::string, 3> &subscripts,
-							    const std::array<std::complex<double> *, 3> &data,
-							    const double &gamma);
+                                                            const std::array<std::string, 3> &subscripts,
+                                                            const std::array<std::complex<double> *, 3> &data,
+                                                            const double &gamma);
 
 template int TNT::Algebra::tensorMult<double>(double *result, const std::string subscript,
                                               const Tensor::Contraction<double> &seq);
 template int TNT::Algebra::tensorMult<std::complex<double>>(std::complex<double> *result, const std::string subscript,
-							    const Tensor::Contraction<std::complex<double>> &seq);
+                                                            const Tensor::Contraction<std::complex<double>> &seq);

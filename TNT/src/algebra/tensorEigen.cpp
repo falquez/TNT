@@ -32,11 +32,11 @@ struct TensorData {
 template <typename F>
 struct TensorData {
   const TNT::Tensor::Contraction<F> &seq;
-  std::array<std::vector<TNT::Algebra::UInt>, 2> dim;
-  std::array<std::string, 2> sub;
+  const std::vector<TNT::Algebra::UInt> dim;
+  const std::array<std::string, 2> subs;
   // std::string subM;
   const std::vector<TNT::Tensor::TensorScalar<F>> &P;
-  const std::vector<TNT::Tensor::Sparse::TensorConstraint<F>> &N;
+  const std::vector<TNT::Tensor::TensorScalar<F>> &C;
 };
 
 template <typename F>
@@ -44,13 +44,16 @@ void tensorVec(void *x, PRIMME_INT *ldx, void *y, PRIMME_INT *ldy, int *blockSiz
 
   TensorData<F> *mdata = static_cast<TensorData<F> *>(primme->matrix);
 
-  TNT::Tensor::Contraction<F> seq{mdata->seq}; //{*(TNT::Tensor::Contraction<F> *)primme->matrix};
   // seq.data.push_back(nullptr);
 
   *ierr = 0;
   for (int i = 0; i < *blockSize; i++) {
-    seq.data.back() = (F *)x + (*ldx) * i;
-    *ierr = TNT::Algebra::tensorMult<F>((F *)y + (*ldy) * i, seq.subs.back(), seq);
+    TNT::Tensor::Contraction<F> seq{mdata->seq};
+    seq.dims.insert(seq.dims.begin(), mdata->dim);
+    seq.subs.insert(seq.subs.begin(), mdata->subs[0]);
+    seq.data.insert(seq.data.begin(), (F *)x + (*ldx) * i);
+    // seq.data.back() = (F *)x + (*ldx) * i;
+    *ierr = TNT::Algebra::tensorMult<F>((F *)y + (*ldy) * i, mdata->subs[1], seq);
   }
 }
 
@@ -59,8 +62,8 @@ void tensorVecPX(void *x, PRIMME_INT *ldx, void *y, PRIMME_INT *ldy, int *blockS
 
   TensorData<F> *mdata = static_cast<TensorData<F> *>(primme->matrix);
 
-  TNT::Tensor::Contraction<F> seq{mdata->seq}; //{*(TNT::Tensor::Contraction<F> *)primme->matrix};
-  seq.data.push_back(nullptr);
+  // TNT::Tensor::Contraction<F> seq{mdata->seq}; //{*(TNT::Tensor::Contraction<F> *)primme->matrix};
+  // seq.data.push_back(nullptr);
 
   unsigned int nprojs = mdata->P.size();
   // std::cout << "nprojs=" << nprojs << " dimX=";
@@ -70,17 +73,17 @@ void tensorVecPX(void *x, PRIMME_INT *ldx, void *y, PRIMME_INT *ldy, int *blockS
 
   *ierr = 0;
   for (int i = 0; i < *blockSize; i++) {
-    seq.data.back() = (F *)x + (*ldx) * i;
-    *ierr = TNT::Algebra::tensorMult<F>((F *)y + (*ldy) * i, seq.subs.back(), seq);
+    TNT::Tensor::Contraction<F> seq{mdata->seq};
+    seq.dims.insert(seq.dims.begin(), mdata->dim);
+    seq.subs.insert(seq.subs.begin(), mdata->subs[0]);
+    seq.data.insert(seq.data.begin(), (F *)x + (*ldx) * i);
+    // seq.data.back() = (F *)x + (*ldx) * i;
+    *ierr = TNT::Algebra::tensorMult<F>((F *)y + (*ldy) * i, mdata->subs[1], seq);
 
     for (unsigned int n = 0; n < nprojs; n++) {
-      TNT::Tensor::Tensor<F> X(mdata->dimX);
-      X.readFrom((F *)x + (*ldx) * i);
-      // std::cout << "mdata->P[" << n << "]" << mdata->P[n] << std::endl;
-      // std::cout << "X=" << X << std::endl;
-      F c = std::get<0>(mdata->P[n])(mdata->subX) * X(mdata->subX);
+      F c = std::get<0>(mdata->P[n]).dot((F *)x + (*ldx) * i);
       // std::cout << "n=" << n << " c=" << c << std::endl;
-      std::get<0>(mdata->P[n]).conjugate().addTo((F *)y + (*ldy) * i, std::get<1>(mdata->P[n]) * c);
+      std::get<0>(mdata->P[n]).conjugate().addTo((F *)y + (*ldy) * i, std::get<1>(mdata->P[n])[0] * c);
     }
   }
 }
@@ -91,7 +94,7 @@ namespace TNT::Algebra {
   template <typename F>
   int tensorEigen(double *evals, F *evecs, const std::array<std::string, 2> &sub, const Tensor::Contraction<F> &seq,
                   const std::vector<TNT::Tensor::TensorScalar<F>> &P,
-                  const std::vector<TNT::Tensor::TensorScalar<F>> &X, const Options &options) {
+                  const std::vector<TNT::Tensor::TensorScalar<F>> &C, const Options &options) {
     int err = 0;
 
     std::unique_ptr<double[]> targetShifts;
@@ -99,24 +102,20 @@ namespace TNT::Algebra {
     /* Allocate space for converged Ritz values and residual norms */
     std::unique_ptr<double[]> rnorm = std::make_unique<double[]>(options.nv);
 
-    Tensor::Contraction<F> nseq{seq};
+    // Tensor::Contraction<F> nseq{seq};
 
     auto idx = Util::split(sub[0], ",");
     std::vector<UInt> dim(idx.size());
     for (unsigned int i = 0; i < dim.size(); i++)
       dim[i] = seq.dim_map.at(idx[i]);
 
-    nseq.dims.push_back(dim);
-    nseq.subs.push_back(sub[0]);
-    nseq.subs.push_back(sub[1]);
-
     primme_params primme;
     primme_initialize(&primme);
 
-    TensorData<F> mdata{nseq, dim, sub[0], P, X};
+    TensorData<F> mdata{seq, dim, sub, P, C};
 
     primme.matrix = &mdata;
-    if (P.size() > 0 || X.size() > 0)
+    if (P.size() > 0 || C.size() > 0)
       primme.matrixMatvec = tensorVecPX<F>;
     else
       primme.matrixMatvec = tensorVec<F>;
@@ -154,8 +153,11 @@ namespace TNT::Algebra {
       break;
     }
 
+    if (options.verbosity > 0) {
+      primme_display_params(primme);
+      primme.printLevel = options.verbosity;
+    }
     /* Call primme  */
-    primme.printLevel = 4;
     err = PRIMME::calculate_ewp_primme<F>(evals, evecs, rnorm.get(), &primme);
     int converged = primme.initSize;
 
