@@ -121,7 +121,7 @@ int main(int argc, char **argv) {
       // Initialize Right Contractions
       RC[L] = Tensor::Tensor<NumericalType>({1, 1, 1}, 1.0);
       for (unsigned int l = L - 1; l >= i_l; l--) {
-        Tensor::Tensor DW(W[l + 1]);
+        Tensor::Tensor DW(W[l + 1].dense());
         RC[l]("b1,a1,a1'") =
             A[n][l + 1]("s,a1,a2") * DW("b1,b2,s,s'") * RC[l + 1]("b2,a2,a2'") * A[n][l + 1].conjugate()("s',a1',a2'");
       }
@@ -129,7 +129,7 @@ int main(int argc, char **argv) {
       // Initialize Left Contractions
       LC[1] = Tensor::Tensor<NumericalType>({1, 1, 1}, 1.0);
       for (unsigned int l = 1; l < i_r; l++) {
-        Tensor::Tensor DW(W[l]);
+        Tensor::Tensor DW(W[l].dense());
         LC[l + 1]("b2,a2,a2'") =
             A[n][l]("s,a1,a2") * DW("b1,b2,s,s'") * LC[l]("b1,a1,a1'") * A[n][l].conjugate()("s',a1',a2'");
       }
@@ -160,7 +160,8 @@ int main(int argc, char **argv) {
         auto nsv = A[n][l]("s1,a1,a").dimension("a");
 
         auto norm = dir == Network::MPS::Sweep::Direction::Right ? Tensor::SVDNorm::left : Tensor::SVDNorm::right;
-        auto DW = dir == Network::MPS::Sweep::Direction::Right ? Tensor::Tensor(W[l]) : Tensor::Tensor(W[r]);
+        auto DW =
+            dir == Network::MPS::Sweep::Direction::Right ? Tensor::Tensor(W[l].dense()) : Tensor::Tensor(W[r].dense());
 
         // Perform SVD on T and reassign to A[l], A[r]
         std::cout << "INFO: Decompose T into A[" << l << "]*A[" << r << "]"

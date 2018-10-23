@@ -190,22 +190,6 @@ int main(int argc, char **argv) {
               A[n][r]("s,a1,a2") * W[w_lr]("b1,b2,s,s'") * RC[r]("b2,a2,a2'") * A[n][r].conjugate()("s',a1',a2'");
           break;
         }
-        // Write observables to text file
-        /*for (const auto &[i_o, obs] : observables.iterate()) {
-          std::cout << "INFO: Store A[" << n << "](" << obs.name << ")" << std::endl;
-          std::ofstream ofile(output_dir + obs.name + ".txt");
-          auto result = A[n](obs);
-          for (const auto &r : result) {
-            for (const auto &s : r.site)
-              ofile << s << " ";
-            ofile.precision(std::numeric_limits<double>::max_digits10);
-            for (const auto &[name, v] : params)
-              ofile << v << " ";
-            ofile << state.eigenvalue << " " << state.variance << " ";
-            ofile << r.value << std::endl;
-          }
-          ofile << std::endl;
-        }*/
       }
 
       // Write observables to text file
