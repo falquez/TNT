@@ -66,7 +66,7 @@ void MatVec(void *x, PRIMME_INT *ldx, void *y, PRIMME_INT *ldy, int *blockSize, 
 
   for (int i = 0; i < *blockSize; i++) {
     if (*tr == 0) {
-      // std::cout << "0:" << mdata->subs[0] << "->" << mdata->subs[1] << std::endl;
+      // std::cout << "0:" << mdata->subs[1] << "->" << mdata->subs[0] << std::endl;
       TNT::Tensor::Contraction<F> seq{mdata->seq};
 
       std::reverse(seq.dims.begin(), seq.dims.end());
@@ -91,12 +91,16 @@ void MatVec(void *x, PRIMME_INT *ldx, void *y, PRIMME_INT *ldy, int *blockSize, 
       }
       std::cout << "}" << std::endl;*/
     } else {
-      // std::cout << "1:" << mdata->subs[1] << "->" << mdata->subs[0] << std::endl;
+      // std::cout << "1:" << mdata->subs[0] << "->" << mdata->subs[1] << std::endl;
       TNT::Tensor::Contraction<F> seq{mdata->seq};
 
-      seq.dims.push_back(mdata->dim[0]);
-      seq.subs.push_back(mdata->subs[0]);
-      seq.data.push_back((F *)x + (*ldx) * i);
+      seq.dims.insert(seq.dims.begin(), mdata->dim[0]);
+      seq.subs.insert(seq.subs.begin(), mdata->subs[0]);
+      seq.data.insert(seq.data.begin(), (F *)x + (*ldx) * i);
+
+      // std::reverse(seq.dims.begin(), seq.dims.end());
+      // std::reverse(seq.subs.begin(), seq.subs.end());
+      // std::reverse(seq.data.begin(), seq.data.end());
 
       *ierr = TNT::Algebra::tensorMult<F>((F *)y + (*ldy) * i, mdata->subs[1], seq, mdata->debug);
 
@@ -306,6 +310,7 @@ namespace TNT::Algebra {
       primme_svds_display_params(primme_svds);
       primme_svds.printLevel = options.verbosity;
     }
+    primme_svds.printLevel = 2;
 
     err = PRIMME::calculate_svds_primme<F>(svals, svecs, rnorm.get(), &primme_svds);
 
