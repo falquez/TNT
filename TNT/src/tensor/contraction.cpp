@@ -123,7 +123,7 @@ namespace TNT::Tensor {
     std::unique_ptr<F[]> lvecs = std::make_unique<F[]>(dimM * nvecs);
     std::unique_ptr<F[]> rvecs = std::make_unique<F[]>(dimN * nvecs);
 
-    std::cout << "nsv=" << svdopts.nsv << " nvecs=" << nvecs << " svals[" << nvecs << "]={";
+    /*std::cout << "nsv=" << svdopts.nsv << " nvecs=" << nvecs << " svals[" << nvecs << "]={";
     for (unsigned int j = 0; j < nvecs; j++) {
       std::cout << j << ":" << svals[j] << ", ";
       // if(svals[j]<0)
@@ -133,7 +133,7 @@ namespace TNT::Tensor {
     std::cout << "svecs[" << (dimM + dimN) * svdopts.nsv << "]={";
     for (unsigned int j = 0; j < (dimM + dimN) * svdopts.nsv; j++)
       std::cout << j << ":" << svecs[j] << ", ";
-    std::cout << "}" << std::endl;
+    std::cout << "}" << std::endl;*/
 
     // UInt ldM = nvecs;
     switch (svdopts.norm) {
@@ -171,7 +171,7 @@ namespace TNT::Tensor {
     for (UInt n = 0; n < dimN * nvecs; n++) {
       std::cout << "n:" << rvecs[n] << ",";
     }
-    std::cout << "}" << std::endl;*/
+    std::cout << "}" << std::endl;
     for (UInt n = 0; n < nvecs; n++) {
       std::cout << "slvec[" << n << "]={";
       for (UInt i = 0; i < dimM; i++)
@@ -189,7 +189,7 @@ namespace TNT::Tensor {
     std::cout << "ssvals: ";
     for (int i = 0; i < nvecs; i++)
       std::cout << "[" << i << "]=" << svals[i] << ", ";
-    std::cout << std::endl;
+    std::cout << std::endl;*/
 
     // Initialize dimension map
     // for (UInt i = 0; i < index.size(); i++)

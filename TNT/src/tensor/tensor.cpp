@@ -632,7 +632,7 @@ namespace TNT::Tensor {
       std::cout << rvecs[n] << ",";
     }
     std::cout << "}" << std::endl;*/
-    for (UInt n = 0; n < nvecs; n++) {
+    /*for (UInt n = 0; n < nvecs; n++) {
       std::cout << "tlvec[" << n << "]={";
       for (UInt i = 0; i < dimM; i++)
         std::cout << lvecs[n * dimM + i] << ",";
@@ -649,7 +649,7 @@ namespace TNT::Tensor {
     std::cout << "tsvals: ";
     for (int i = 0; i < nvecs; i++)
       std::cout << "[" << i << "]=" << svals[i] << ", ";
-    std::cout << std::endl;
+    std::cout << std::endl;*/
 
     // Initialize dimension map
     for (UInt i = 0; i < index.size(); i++)

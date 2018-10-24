@@ -31,7 +31,6 @@
 #include <TNT/tensor/contraction.h>
 #include <TNT/tensor/eigensolver.h>
 #include <TNT/tensor/tensor.h>
-#include <fenv.h>
 
 using NumericalType = double;
 using UInt = unsigned int;
@@ -76,7 +75,7 @@ int main(int argc, char **argv) {
       const auto W2 = W * W;
       std::cout << "Calculate W2c" << std::endl;
       auto W2c = W * W;
-      W2c.compress(8 * W.dimW(), 1E-6);
+      W2c.compress(4 * W.dimW(), 1E-6);
 
       std::cout << "W2=" << W2 << std::endl;
       std::cout << "W2c=" << W2c << std::endl;

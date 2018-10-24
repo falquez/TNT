@@ -62,27 +62,22 @@ namespace TNT::Algebra {
     dims = std::vector<int>(seq.dims[0].begin(), seq.dims[0].end());
     T[curr] = tcl::Tensor<F>(dims, seq.data[0]);
 
-    if (debug) {
-      std::cout << "DEBUG: tensorMult(" << subscript << ") <-";
-      for (const auto s : seq.subs)
-	std::cout << "(" << s << ")* ";
-      for (const auto &[s, d] : seq.dim_map)
-	std::cout << s << "=" << d << ", ";
-      std::cout << std::endl;
-    }
+    /*std::cout << "DEBUG: tensorMult(" << subscript << ") <-";
+    for (const auto s : seq.subs)
+      std::cout << "(" << s << ")* ";
+    for (const auto &[s, d] : seq.dim_map)
+      std::cout << s << "=" << d << ", ";
+    std::cout << std::endl;*/
 
-    if (debug) {
-      std::cout << "curr[0]=(";
+    /*if (debug) {
+      std::cout << "curr[" << 0 << "]=(";
       for (const auto &d : seq.dims[0])
 	std::cout << d << ", ";
-      std::cout << ")" << std::endl;
-      for (int j = 0; j < Util::multiply<int>(dims); j++) {
-	if (!(seq.data[0][j] == seq.data[0][j]))
-	  std::cout << "curr[0] NAN=" << seq.data[0][j] << ",";
-      }
-
-      // std::cout << "}" << std::endl;
-    }
+      std::cout << ") curr[" << 0 << "]={";
+      for (int j = 0; j < Util::multiply<int>(dims); j++)
+	std::cout << seq.data[0][j] << ",";
+      std::cout << "}" << std::endl;
+    }*/
 
     for (UInt i = 1; i < seq.data.size(); i++) {
       prev = (i - 1) % 2;
@@ -95,62 +90,48 @@ namespace TNT::Algebra {
       dims = std::vector<int>(seq.dims[i].begin(), seq.dims[i].end());
       T[curr] = tcl::Tensor<F>(dims, seq.data[i]);
 
-      if (debug) {
-	/*std::cout << "curr[" << i << "]={";
-	for (int j = 0; j < Util::multiply<int>(dims); j++)
-	  std::cout << seq.data[i][j] << ",";
-	std::cout << "}" << std::endl;*/
+      /*if (debug) {
 	std::cout << "curr[" << i << "]=(";
 	for (const auto &d : seq.dims[i])
 	  std::cout << d << ", ";
-	std::cout << ")" << std::endl;
-	for (int j = 0; j < Util::multiply<int>(dims); j++) {
-	  if (!(seq.data[i][j] == seq.data[i][j]))
-	    std::cout << "curr[" << i << "] NAN=" << seq.data[i][j] << ",";
-	}
-      }
+	std::cout << ") curr[" << i << "]={";
+	for (int j = 0; j < Util::multiply<int>(dims); j++)
+	  std::cout << seq.data[i][j] << ",";
+	std::cout << "}" << std::endl;
+      }*/
 
       std::vector<std::string> idx3;
       std::set_symmetric_difference(idx[prev].begin(), idx[prev].end(), idx[curr].begin(), idx[curr].end(),
-                                    std::back_inserter(idx3));
+				    std::back_inserter(idx3));
       std::string sub3 = Util::concat(idx3, ",");
 
       std::vector<int> dim3(idx3.size());
       for (UInt i = 0; i < idx3.size(); i++)
-        dim3[i] = seq.dim_map.at(idx3[i]);
+	dim3[i] = seq.dim_map.at(idx3[i]);
       std::vector<unsigned long long> dim3l(dim3.begin(), dim3.end());
       unsigned long long size3 = Util::multiply<unsigned long long>(dim3l);
 
-      if (debug) {
-	std::cout << "DEBUG: Allocating T(" << sub3 << ") <- T1(" << sub[prev] << ") *T2(" << sub[curr] << ")dim=(";
-	for (const auto c : idx3)
-	  std::cout << seq.dim_map.at(c) << ",";
-	std::cout << ") size=" << size3 << " MB=" << (size3 * sizeof(F)) / (1E6) << std::endl;
-      }
+      /*std::cout << "DEBUG: Allocating T(" << sub3 << ") <- T1(" << sub[prev] << ") *T2(" << sub[curr] << ")dim=(";
+      for (const auto c : idx3)
+	std::cout << seq.dim_map.at(c) << ",";
+      std::cout << ") size=" << size3 << " MB=" << (size3 * sizeof(F)) / (1E6) << std::endl;*/
 
       buff[curr] = std::make_unique<F[]>(size3);
       tcl::Tensor<F> T3(dim3, buff[curr].get());
 
       err = tcl::tensorMult<F>(1.0, T[prev][sub[prev]], T[curr][sub[curr]], 0.0, T3[sub3]);
 
-      if (debug) {
-	/*std::cout << "curr={";
-	for (int j = 0; j < size3; j++)
-	  std::cout << buff[curr][j] << ",";
-	std::cout << "}" << std::endl;*/
-	std::cout << "curr=(";
-	for (const auto &d : dim3)
-	  std::cout << d << ", ";
-	std::cout << ")" << std::endl;
-	for (int j = 0; j < size3; j++) {
-	  if (!(buff[curr][j] == buff[curr][j]))
-	    std::cout << "curr NAN=" << buff[curr][j] << ",";
-	}
-      }
+      /*std::cout << "dim=(";
+      for (const auto &d : dim3)
+	std::cout << d << ", ";
+      std::cout << ") curr={";
+      for (int j = 0; j < size3; j++)
+	std::cout << buff[curr][j] << ",";
+      std::cout << "}" << std::endl;*/
 
       if (err != 0) {
-        std::cout << "TensorMult Error: " << err << std::endl;
-        exit(err);
+	std::cout << "TensorMult Error: " << err << std::endl;
+	exit(err);
       }
 
       T[curr] = T3;
@@ -170,13 +151,13 @@ namespace TNT::Algebra {
 
     // Permute result
     auto plan = hptt::create_plan(&perm[0], dimA.size(), 1.0, buff[curr].get(), &dimA[0], NULL, 0.0, result, NULL,
-                                  hptt::ESTIMATE, Algebra::numThreads);
+				  hptt::ESTIMATE, Algebra::numThreads);
     plan->execute();
 
     malloc_trim(0);
 
     return err;
-  }
+  } // namespace TNT::Algebra
 } // namespace TNT::Algebra
 
 template int TNT::Algebra::tensorMult<double>(const std::array<std::vector<int>, 3> &dims,
