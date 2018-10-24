@@ -55,9 +55,10 @@ namespace TNT::Operator {
     // W("(b1,b1'),(b2,b2'),a1,a2'")
     MPO<F> operator*(const MPO<F> &rhs) const;
 
-    MPO<F> &compress(const double &tolerance = 1E-08);
+    MPO<F> &compress(const UInt &dimW, const double &tolerance = 1E-08);
 
     UInt dimH() const { return _dimH; }
+    UInt dimW() const { return _dimW; }
 
     UInt length() const { return _length; }
 

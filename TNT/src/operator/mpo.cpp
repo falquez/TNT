@@ -21,6 +21,7 @@
 #include <TNT/tensor/sparse/tensor.h>
 #include <TNT/tensor/tensor.h>
 
+#include "../algebra/algebra.h"
 #include "../parser/parser.h"
 
 namespace TNT::Operator {
@@ -60,7 +61,7 @@ namespace TNT::Operator {
         W[l] = Tensor::Tensor<F>({1, _dimW, _dimH, _dimH});
         // Parse single site
         if (H.single_site) {
-	  Tensor::Tensor<F> res = parser.parse(*H.single_site, l);
+          Tensor::Tensor<F> res = parser.parse(*H.single_site, l);
           for (unsigned int i = 0; i < _dimH; i++)
             for (unsigned int j = 0; j < _dimH; j++)
               W[l][{0, 0, i, j}] = res[{i, j}];
@@ -150,15 +151,30 @@ namespace TNT::Operator {
   }
 
   template <typename F>
-  MPO<F> &MPO<F>::compress(const double &tolerance) {
+  MPO<F> &MPO<F>::compress(const UInt &dimW, const double &tolerance) {
+    // std::cout << "MPO<F>::compress(" << dimW << ", " << tolerance << ") <- dimW=" << _dimW << std::endl;
 
     for (unsigned int l = 0; l < _length - 1; l++) {
+      Tensor::Tensor<F> T1, T2;
       unsigned int r = l + 1;
-      Tensor::Tensor<F> T;
-      T("b1,b2,a1,a1',a2,a2'") = W[l]("b1,b,a1,a1'") * W[r]("b,b2,a2,a2'");
+      std::cout << "l=" << l << " dim=(";
+      for (const auto &d : W[l].dimension())
+        std::cout << d << ", ";
+      std::cout << ") r=" << r << " dim=(";
+      for (const auto &d : W[r].dimension())
+        std::cout << d << ", ";
+      std::cout << ")" << std::endl;
 
-      std::tie(W[l], W[r]) =
-	  T("b1,b2,a1,a1',a2,a2'").SVD2({{"b1,b,a1,a1'", "b,b2,a2,a2'"}}, {Tensor::SVDNorm::equal, _dimW, tolerance});
+      // std::cout << "W[" << l << "]=" << W[l] << std::endl;
+      // std::cout << "W[" << r << "]=" << W[r] << std::endl;
+
+      auto options = Tensor::SVDOptions{Tensor::SVDNorm::equal, dimW, tolerance};
+      std::tie(T1, T2) = (W[l]("b1,b,a1,a1'") * W[r]("b,b2,a2,a2'")).SVD({"b1,b,a1,a1'", "b,b2,a2,a2'"}, options);
+
+      W[l] = T1;
+      W[r] = T2;
+      // std::cout << "W[" << l << "]=" << W[l] << std::endl;
+      // std::cout << "W[" << r << "]=" << W[r] << std::endl;
     }
 
     return *this;
