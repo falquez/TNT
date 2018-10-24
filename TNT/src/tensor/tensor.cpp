@@ -632,24 +632,24 @@ namespace TNT::Tensor {
       std::cout << rvecs[n] << ",";
     }
     std::cout << "}" << std::endl;*/
-    /*for (UInt n = 0; n < nvecs; n++) {
-      std::cout << "lvec[" << n << "]={";
+    for (UInt n = 0; n < nvecs; n++) {
+      std::cout << "tlvec[" << n << "]={";
       for (UInt i = 0; i < dimM; i++)
         std::cout << lvecs[n * dimM + i] << ",";
       std::cout << "}" << std::endl;
     }
 
     for (UInt n = 0; n < nvecs; n++) {
-      std::cout << "rvec[" << n << "]={";
+      std::cout << "trvec[" << n << "]={";
       for (UInt i = 0; i < dimN; i++)
         std::cout << rvecs[n * dimN + i] << ",";
       std::cout << "}" << std::endl;
     }
 
-    std::cout << "svals: ";
+    std::cout << "tsvals: ";
     for (int i = 0; i < nvecs; i++)
       std::cout << "[" << i << "]=" << svals[i] << ", ";
-    std::cout << std::endl;*/
+    std::cout << std::endl;
 
     // Initialize dimension map
     for (UInt i = 0; i < index.size(); i++)
@@ -881,9 +881,8 @@ namespace TNT::Tensor {
     out << ")(" << T.size() << "):\n";
     out << "{";
     for (int i = 0; i < T.size(); i++) {
-      // if (std::abs(T[i]) > 10e-12)
-      // std::cout << i << ":" << T[i] << ",";
-      std::cout << T[i] << ",";
+      if (std::abs(T[i]) > 10e-12)
+	std::cout << i << ":" << T[i] << ",";
     }
     out << "}";
     return out;

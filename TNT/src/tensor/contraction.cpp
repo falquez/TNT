@@ -116,13 +116,24 @@ namespace TNT::Tensor {
     // double anorm = norm2();
     auto opts = Algebra::Options(svdopts.nsv, svdopts.tolerance, Algebra::Target::largest);
     opts.verbosity = svdopts.verbosity;
-    Contraction<F> ct = *this;
-    UInt nvecs = Algebra::tensorSVD<F>(svd_subs, ct, svals.get(), svecs.get(), opts);
+    UInt nvecs = Algebra::tensorSVD<F>(svd_subs, *this, svals.get(), svecs.get(), opts);
 
     svd_map[svd_sub[0]] = nvecs;
 
     std::unique_ptr<F[]> lvecs = std::make_unique<F[]>(dimM * nvecs);
     std::unique_ptr<F[]> rvecs = std::make_unique<F[]>(dimN * nvecs);
+
+    std::cout << "nsv=" << svdopts.nsv << " nvecs=" << nvecs << " svals[" << nvecs << "]={";
+    for (unsigned int j = 0; j < nvecs; j++) {
+      std::cout << j << ":" << svals[j] << ", ";
+      // if(svals[j]<0)
+    }
+    std::cout << "}" << std::endl;
+
+    std::cout << "svecs[" << (dimM + dimN) * svdopts.nsv << "]={";
+    for (unsigned int j = 0; j < (dimM + dimN) * svdopts.nsv; j++)
+      std::cout << j << ":" << svecs[j] << ", ";
+    std::cout << "}" << std::endl;
 
     // UInt ldM = nvecs;
     switch (svdopts.norm) {
@@ -151,17 +162,35 @@ namespace TNT::Tensor {
       }
       break;
     }
-
-    /*std::cout << "contraction lvecs={";
+    /*std::cout << "lvecs={";
     for (UInt n = 0; n < dimM * nvecs; n++) {
-      std::cout << lvecs[n] << ",";
+      std::cout << "n:" << lvecs[n] << ",";
     }
     std::cout << "}" << std::endl;
-    std::cout << "contraction rvecs={";
+    std::cout << "rvecs={";
     for (UInt n = 0; n < dimN * nvecs; n++) {
-      std::cout << rvecs[n] << ",";
+      std::cout << "n:" << rvecs[n] << ",";
     }
     std::cout << "}" << std::endl;*/
+    for (UInt n = 0; n < nvecs; n++) {
+      std::cout << "slvec[" << n << "]={";
+      for (UInt i = 0; i < dimM; i++)
+	std::cout << lvecs[n * dimM + i] << ",";
+      std::cout << "}" << std::endl;
+    }
+
+    for (UInt n = 0; n < nvecs; n++) {
+      std::cout << "srvec[" << n << "]={";
+      for (UInt i = 0; i < dimN; i++)
+	std::cout << rvecs[n * dimN + i] << ",";
+      std::cout << "}" << std::endl;
+    }
+
+    std::cout << "ssvals: ";
+    for (int i = 0; i < nvecs; i++)
+      std::cout << "[" << i << "]=" << svals[i] << ", ";
+    std::cout << std::endl;
+
     // Initialize dimension map
     // for (UInt i = 0; i < index.size(); i++)
     //  dim_map[index[i]] = dim[i];
@@ -195,19 +224,6 @@ namespace TNT::Tensor {
       links_tr[n].insert(links_tr[n].begin() + std::distance(subs[n].begin(), iter), subs[n].size() - 1);
     }
 
-    /*std::cout << "dim_tr[0]=(";
-    for (const auto &d : dim_tr[0])
-      std::cout << d << ",";
-    std::cout << "), dim_tr[1]=(";
-    for (const auto &d : dim_tr[1])
-      std::cout << d << ",";
-    std::cout << "), links_tr[0]=(";
-    for (const auto &d : links_tr[0])
-      std::cout << d << ",";
-    std::cout << "), links_tr[1]=(";
-    for (const auto &d : links_tr[1])
-      std::cout << d << ",";
-    std::cout << ")" << std::endl;*/
     err = Algebra::transpose(dim_tr[0], links_tr[0], lvecs.get(), svd[0].data.get());
     err = Algebra::transpose(dim_tr[1], links_tr[1], rvecs.get(), svd[1].data.get());
 

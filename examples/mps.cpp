@@ -31,6 +31,7 @@
 #include <TNT/tensor/contraction.h>
 #include <TNT/tensor/eigensolver.h>
 #include <TNT/tensor/tensor.h>
+#include <fenv.h>
 
 using NumericalType = double;
 using UInt = unsigned int;
@@ -44,6 +45,7 @@ std::string format(unsigned int n, unsigned int w = 4) {
 int main(int argc, char **argv) {
   using namespace TNT;
   int err = 0;
+  // feenableexcept(FE_INVALID | FE_OVERFLOW);
 
   if (argc == 1) {
     std::cout << argv[0] << " <configuration.json>";
@@ -73,7 +75,8 @@ int main(int argc, char **argv) {
       std::cout << "Calculate W2" << std::endl;
       const auto W2 = W * W;
       std::cout << "Calculate W2c" << std::endl;
-      const auto W2c = (W * W).compress(3 * W.dimW(), 1E-02);
+      auto W2c = W * W;
+      W2c.compress(8 * W.dimW(), 1E-6);
 
       std::cout << "W2=" << W2 << std::endl;
       std::cout << "W2c=" << W2c << std::endl;

@@ -56,24 +56,24 @@ void MatVec(void *x, PRIMME_INT *ldx, void *y, PRIMME_INT *ldy, int *blockSize, 
 
   *ierr = 0;
 
-  std::cout << "dim[0]=(";
+  /*std::cout << "dim[0]=(";
   for (const auto &d : mdata->dim[0])
     std::cout << d << ",";
   std::cout << ") dim[1]=(";
   for (const auto &d : mdata->dim[1])
     std::cout << d << ",";
-  std::cout << ")" << std::endl;
+  std::cout << ")" << std::endl;*/
 
   for (int i = 0; i < *blockSize; i++) {
     if (*tr == 0) {
-      std::cout << "0:" << mdata->subs[0] << "->" << mdata->subs[1] << std::endl;
+      // std::cout << "0:" << mdata->subs[0] << "->" << mdata->subs[1] << std::endl;
       TNT::Tensor::Contraction<F> seq{mdata->seq};
       seq.dims.insert(seq.dims.begin(), mdata->dim[0]);
       seq.subs.insert(seq.subs.begin(), mdata->subs[0]);
       seq.data.insert(seq.data.begin(), (F *)x + (*ldx) * i);
       *ierr = TNT::Algebra::tensorMult<F>((F *)y + (*ldy) * i, mdata->subs[1], seq, mdata->debug);
     } else {
-      std::cout << "1:" << mdata->subs[1] << "->" << mdata->subs[0] << std::endl;
+      // std::cout << "1:" << mdata->subs[1] << "->" << mdata->subs[0] << std::endl;
       TNT::Tensor::Contraction<F> seq{mdata->seq};
       // seq.dims.insert(seq.dims.begin(), mdata->dim[1]);
       // seq.subs.insert(seq.subs.begin(), mdata->subs[1]);
@@ -89,15 +89,25 @@ void MatVec(void *x, PRIMME_INT *ldx, void *y, PRIMME_INT *ldy, int *blockSize, 
     }
     if (mdata->debug) {
       std::cout << "x={";
-      for (int j = 0; j < primme_svds->m; j++)
-	std::cout << ((F *)x + (*ldx) * i)[j] << ",";
+      for (int j = 0; j < primme_svds->m; j++) {
+	F val = ((F *)x + (*ldx) * i)[j];
+	if (!(val == val)) {
+	  std::cout << "NAN[" << j << "]=" << val;
+	}
+	// std::cout << ((F *)x + (*ldx) * i)[j] << ",";
+      }
       std::cout << "}" << std::endl;
     }
 
     if (mdata->debug) {
       std::cout << "y={";
-      for (int j = 0; j < primme_svds->n; j++)
-	std::cout << ((F *)y + (*ldy) * i)[j] << ",";
+      for (int j = 0; j < primme_svds->n; j++) {
+	F val = ((F *)y + (*ldy) * i)[j];
+	if (!(val == val)) {
+	  std::cout << "NAN[" << j << "]=" << val;
+	}
+	// std::cout << ((F *)y + (*ldy) * i)[j] << ",";
+      }
       std::cout << "}" << std::endl;
     }
 
@@ -262,8 +272,8 @@ namespace TNT::Algebra {
     primme_svds.numSvals = options.nv;
 
     primme_svds.eps = options.tolerance;
-    primme_svds.aNorm = options.aNorm;
-    primme_svds.initSize = options.initial;
+    // primme_svds.aNorm = options.aNorm;
+    // primme_svds.initSize = options.initial;
     switch (options.target) {
     case Target::largest:
       primme_svds.target = primme_svds_largest;
