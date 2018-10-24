@@ -115,7 +115,9 @@ namespace TNT::Tensor {
 
     // double anorm = norm2();
     auto opts = Algebra::Options(svdopts.nsv, svdopts.tolerance, Algebra::Target::largest);
-    UInt nvecs = Algebra::tensorSVD<F>(svd_subs, *this, svals.get(), svecs.get(), opts);
+    opts.verbosity = svdopts.verbosity;
+    Contraction<F> ct = *this;
+    UInt nvecs = Algebra::tensorSVD<F>(svd_subs, ct, svals.get(), svecs.get(), opts);
 
     svd_map[svd_sub[0]] = nvecs;
 

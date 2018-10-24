@@ -46,7 +46,7 @@ namespace TNT::Algebra {
   }
 
   template <typename F>
-  int tensorMult(F *result, const std::string subscript, const Tensor::Contraction<F> &seq) {
+  int tensorMult(F *result, const std::string subscript, const Tensor::Contraction<F> &seq, const bool debug) {
     int err = 0;
     int prev = 0, curr = 0;
 
@@ -67,10 +67,12 @@ namespace TNT::Algebra {
     dims = std::vector<int>(seq.dims[0].begin(), seq.dims[0].end());
     T[curr] = tcl::Tensor<F>(dims, seq.data[0]);
 
-    std::cout << "curr[0]={";
-    for (int j = 0; j < Util::multiply<int>(dims); j++)
-      std::cout << seq.data[0][j] << ",";
-    std::cout << "}" << std::endl;
+    if (debug) {
+      std::cout << "curr[0]={";
+      for (int j = 0; j < Util::multiply<int>(dims); j++)
+	std::cout << seq.data[0][j] << ",";
+      std::cout << "}" << std::endl;
+    }
 
     for (UInt i = 1; i < seq.data.size(); i++) {
       prev = (i - 1) % 2;
@@ -83,10 +85,12 @@ namespace TNT::Algebra {
       dims = std::vector<int>(seq.dims[i].begin(), seq.dims[i].end());
       T[curr] = tcl::Tensor<F>(dims, seq.data[i]);
 
-      std::cout << "curr[" << i << "]={";
-      for (int j = 0; j < Util::multiply<int>(dims); j++)
-        std::cout << seq.data[i][j] << ",";
-      std::cout << "}" << std::endl;
+      if (debug) {
+	std::cout << "curr[" << i << "]={";
+	for (int j = 0; j < Util::multiply<int>(dims); j++)
+	  std::cout << seq.data[i][j] << ",";
+	std::cout << "}" << std::endl;
+      }
 
       std::vector<std::string> idx3;
       std::set_symmetric_difference(idx[prev].begin(), idx[prev].end(), idx[curr].begin(), idx[curr].end(),
@@ -109,10 +113,12 @@ namespace TNT::Algebra {
 
       err = tcl::tensorMult<F>(1.0, T[prev][sub[prev]], T[curr][sub[curr]], 0.0, T3[sub3]);
 
-      std::cout << "curr={";
-      for (int j = 0; j < size3; j++)
-        std::cout << buff[curr][j] << ",";
-      std::cout << "}" << std::endl;
+      if (debug) {
+	std::cout << "curr={";
+	for (int j = 0; j < size3; j++)
+	  std::cout << buff[curr][j] << ",";
+	std::cout << "}" << std::endl;
+      }
 
       if (err != 0) {
         std::cout << "TensorMult Error: " << err << std::endl;
@@ -154,6 +160,7 @@ template int TNT::Algebra::tensorMult<std::complex<double>>(const std::array<std
                                                             const double &gamma);
 
 template int TNT::Algebra::tensorMult<double>(double *result, const std::string subscript,
-                                              const Tensor::Contraction<double> &seq);
+					      const Tensor::Contraction<double> &seq, const bool debug);
 template int TNT::Algebra::tensorMult<std::complex<double>>(std::complex<double> *result, const std::string subscript,
-                                                            const Tensor::Contraction<std::complex<double>> &seq);
+							    const Tensor::Contraction<std::complex<double>> &seq,
+							    const bool debug);

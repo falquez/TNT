@@ -38,6 +38,7 @@ namespace TNT::Tensor {
     SVDNorm norm = SVDNorm::equal;
     UInt nsv = 0;
     double tolerance = 1e-9;
+    UInt verbosity = 0;
   };
 
   template <typename F>

@@ -45,6 +45,7 @@ struct SVDTensorData {
   const TNT::Tensor::Contraction<F> &seq;
   const std::array<std::vector<TNT::Algebra::UInt>, 2> dim;
   const std::array<std::string, 2> subs;
+  bool debug = false;
 };
 
 template <typename F>
@@ -70,7 +71,7 @@ void MatVec(void *x, PRIMME_INT *ldx, void *y, PRIMME_INT *ldy, int *blockSize, 
       seq.dims.insert(seq.dims.begin(), mdata->dim[0]);
       seq.subs.insert(seq.subs.begin(), mdata->subs[0]);
       seq.data.insert(seq.data.begin(), (F *)x + (*ldx) * i);
-      *ierr = TNT::Algebra::tensorMult<F>((F *)y + (*ldy) * i, mdata->subs[1], seq);
+      *ierr = TNT::Algebra::tensorMult<F>((F *)y + (*ldy) * i, mdata->subs[1], seq, mdata->debug);
     } else {
       std::cout << "1:" << mdata->subs[1] << "->" << mdata->subs[0] << std::endl;
       TNT::Tensor::Contraction<F> seq{mdata->seq};
@@ -84,17 +85,21 @@ void MatVec(void *x, PRIMME_INT *ldx, void *y, PRIMME_INT *ldy, int *blockSize, 
       std::reverse(seq.subs.begin(), seq.subs.end());
       std::reverse(seq.data.begin(), seq.data.end());
 
-      *ierr = TNT::Algebra::tensorMult<F>((F *)y + (*ldy) * i, mdata->subs[0], seq);
+      *ierr = TNT::Algebra::tensorMult<F>((F *)y + (*ldy) * i, mdata->subs[0], seq, mdata->debug);
     }
-    /*std::cout << "x={";
-    for (int j = 0; j < primme_svds->m; j++)
-      std::cout << ((F *)x + (*ldx) * i)[j] << ",";
-    std::cout << "}" << std::endl;*/
+    if (mdata->debug) {
+      std::cout << "x={";
+      for (int j = 0; j < primme_svds->m; j++)
+	std::cout << ((F *)x + (*ldx) * i)[j] << ",";
+      std::cout << "}" << std::endl;
+    }
 
-    /*std::cout << "y={";
-    for (int j = 0; j < primme_svds->n; j++)
-      std::cout << ((F *)y + (*ldy) * i)[j] << ",";
-    std::cout << "}" << std::endl;*/
+    if (mdata->debug) {
+      std::cout << "y={";
+      for (int j = 0; j < primme_svds->n; j++)
+	std::cout << ((F *)y + (*ldy) * i)[j] << ",";
+      std::cout << "}" << std::endl;
+    }
 
     if (*ierr != 0) {
       std::cout << "tensorMult Error: " << *ierr << std::endl;
@@ -230,6 +235,9 @@ namespace TNT::Algebra {
     }
 
     SVDTensorData<F> mdata{seq, dims, subs};
+
+    if (options.verbosity > 0)
+      mdata.debug = true;
 
     /*std::cout << "tensorSVD " << subs[0] << "dims[0]=(";
     for (const auto &d : dims[0])

@@ -165,16 +165,19 @@ namespace TNT::Operator {
         std::cout << d << ", ";
       std::cout << ")" << std::endl;
 
-      // std::cout << "W[" << l << "]=" << W[l] << std::endl;
-      // std::cout << "W[" << r << "]=" << W[r] << std::endl;
-
       auto options = Tensor::SVDOptions{Tensor::SVDNorm::equal, dimW, tolerance};
-      std::tie(T1, T2) = (W[l]("b1,b,a1,a1'") * W[r]("b,b2,a2,a2'")).SVD({"b1,b,a1,a1'", "b,b2,a2,a2'"}, options);
+      if (l >= 1) {
+	options.verbosity = 2;
+	std::cout << "W[" << l << "]=" << W[l] << std::endl;
+	std::cout << "W[" << r << "]=" << W[r] << std::endl;
+      }
+      Tensor::Contraction<F> ct = W[l]("b1,b,a1,a1'") * W[r]("b,b2,a2,a2'");
+      std::tie(T1, T2) = ct.SVD({"b1,b,a1,a1'", "b,b2,a2,a2'"}, options);
 
       W[l] = T1;
       W[r] = T2;
-      // std::cout << "W[" << l << "]=" << W[l] << std::endl;
-      // std::cout << "W[" << r << "]=" << W[r] << std::endl;
+      std::cout << "Final W[" << l << "]=" << W[l] << std::endl;
+      std::cout << "Final W[" << r << "]=" << W[r] << std::endl;
     }
 
     return *this;

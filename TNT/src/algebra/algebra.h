@@ -77,7 +77,7 @@ namespace TNT::Algebra {
                  const std::array<F *, 3> &data, const double &gamma = 0.0);
 
   template <typename F>
-  int tensorMult(F *result, const std::string subscript, const Tensor::Contraction<F> &seq);
+  int tensorMult(F *result, const std::string subscript, const Tensor::Contraction<F> &seq, const bool debug = false);
 
   template <typename F>
   int tensorQRD(const std::array<int, 2> &dim, F *data, F *R);
