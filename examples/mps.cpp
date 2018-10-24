@@ -73,7 +73,7 @@ int main(int argc, char **argv) {
       std::cout << "Calculate W2" << std::endl;
       const auto W2 = W * W;
       std::cout << "Calculate W2c" << std::endl;
-      const auto W2c = (W * W).compress();
+      const auto W2c = (W * W).compress(3 * W.dimW(), 1E-02);
 
       std::cout << "W2=" << W2 << std::endl;
       std::cout << "W2c=" << W2c << std::endl;
@@ -165,7 +165,7 @@ int main(int argc, char **argv) {
                   << " nsv=" << nsv << ", tol=" << config.tolerance("svd") << std::endl;
         // if (nsv < 4)
         std::tie(A[n][l], A[n][r]) =
-            T("s1,s3,a1,a2").SVD2({{"s1,a1,a3", "s3,a3,a2"}}, {norm, nsv, config.tolerance("svd")});
+            T("s1,s3,a1,a2").SVD({{"s1,a1,a3", "s3,a3,a2"}}, {norm, nsv, config.tolerance("svd")});
         // else
         //  std::tie(A[n][l], A[n][r]) =
         //      T("s1,s3,a1,a2").SVD({{"s1,a1,a3", "s3,a3,a2"}}, A[n][l], A[n][r], {norm, nsv,
@@ -198,18 +198,21 @@ int main(int argc, char **argv) {
         // NumericalType E2A = T("s1',a1',a'") * A[n][l].conjugate()("s1',a1',a'");
         std::cout << "INFO: Calculate A[" << n << "](W2) B" << std::endl;
         double E2 = A[n](W2);
+        double E2c = A[n](W2c);
+
         double NV = params.at("VAR");
         E[n] = ew;
         state.eigenvalue = ew;
         state.variance = (E2 - ew * ew) / (NV * L);
+        double variance2 = (E2c - ew * ew) / (NV * L);
 
         std::cout << "INFO: n=" << n << " p=" << p_i << " swp=" << state.iteration / L;
         std::cout << " i=" << state.iteration << ", l=" << l << ", r=" << r << ", ";
         std::cout.precision(std::numeric_limits<double>::max_digits10);
         for (const auto &[name, value] : params)
           std::cout << name << "=" << value << ", ";
-        std::cout << "ev=" << state.eigenvalue << ", var=" << state.variance;
-        // std::cout << ", E2A=" << E2A << ", E2=" << E2;
+        std::cout << "ev=" << state.eigenvalue << ", var=" << state.variance << ", var2=" << variance2;
+        std::cout << ", E2c=" << E2c << ", E2=" << E2 << ", E2-E2c=" << E2 - E2c;
         std::cout << ", w=" << state.eigenvalue / (2 * L * params.at("x"));
         std::cout << std::endl;
 

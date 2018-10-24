@@ -37,7 +37,7 @@ namespace TNT::Util {
   template <typename V>
   std::map<V, int> indexed(const std::set<V> &items);
 
-  std::vector<std::string> split(const std::string &str, const std::string &sep);
+  std::vector<std::string> split(const std::string &str, const std::string &sep = ",");
 
   std::vector<int> permutation(const std::array<std::string, 2> &str, const std::string &sep = ",");
 
