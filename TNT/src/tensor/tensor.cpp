@@ -418,7 +418,7 @@ namespace TNT::Tensor {
     return std::make_tuple(std::move(T), std::move(R));
   }
 
-  template <typename F>
+  /*template <typename F>
   std::tuple<Tensor<F>, Tensor<F>> Tensor<F>::SVD(std::array<std::string, 2> subscript,
                                                   const SVDOptions &svdopts) const {
     int err = 0;
@@ -537,11 +537,11 @@ namespace TNT::Tensor {
     err = Algebra::transpose(dim_tr[1], links_tr[1], rvecs.get(), svd[1].data.get());
 
     return std::make_tuple(std::move(svd[0]), std::move(svd[1]));
-  }
+  }*/
 
   template <typename F>
-  std::tuple<Tensor<F>, Tensor<F>> Tensor<F>::SVD2(std::array<std::string, 2> subscript,
-                                                   const SVDOptions &svdopts) const {
+  std::tuple<Tensor<F>, Tensor<F>> Tensor<F>::SVD(std::array<std::string, 2> subscript,
+                                                  const SVDOptions &svdopts) const {
     int err = 0;
 
     std::array<Tensor<F>, 2> svd;
@@ -581,8 +581,8 @@ namespace TNT::Tensor {
 
     // std::unique_ptr<double[]> svals = std::make_unique<double[]>(svdopts.nsv);
     // std::unique_ptr<F[]> svecs = std::make_unique<F[]>((dimM + dimN) * svdopts.nsv);
-    std::cout << "dimM=" << dimM << " dimN=" << dimN << " nsv=" << svdopts.nsv;
-    std::cout << " size=" << (dimM * dimM + dimN * dimN) * sizeof(double) / 1E06 << std::endl;
+    // std::cout << "dimM=" << dimM << " dimN=" << dimN << " nsv=" << svdopts.nsv;
+    // std::cout << " size=" << (dimM * dimM + dimN * dimN) * sizeof(double) / 1E06 << std::endl;
 
     std::unique_ptr<double[]> svals = std::make_unique<double[]>(dimM);
     std::unique_ptr<F[]> svecs = std::make_unique<F[]>(dimM * dimM + dimN * dimN);
@@ -590,7 +590,7 @@ namespace TNT::Tensor {
     double anorm = norm2();
     auto opts = Algebra::Options(svdopts.nsv, svdopts.tolerance, anorm, Algebra::Target::largest);
 
-    UInt nvecs = Algebra::tensorSVD2<F>(dim, links, svals.get(), svecs.get(), data.get(), opts);
+    UInt nvecs = Algebra::tensorSVD<F>(dim, links, svals.get(), svecs.get(), data.get(), opts);
 
     std::unique_ptr<F[]> lvecs = std::make_unique<F[]>(dimM * nvecs);
     std::unique_ptr<F[]> rvecs = std::make_unique<F[]>(dimN * nvecs);
@@ -622,7 +622,16 @@ namespace TNT::Tensor {
       }
       break;
     }
-
+    /*std::cout << "tensor lvecs={";
+    for (UInt n = 0; n < dimM * nvecs; n++) {
+      std::cout << lvecs[n] << ",";
+    }
+    std::cout << "}" << std::endl;
+    std::cout << "tensor rvecs={";
+    for (UInt n = 0; n < dimN * nvecs; n++) {
+      std::cout << rvecs[n] << ",";
+    }
+    std::cout << "}" << std::endl;*/
     /*for (UInt n = 0; n < nvecs; n++) {
       std::cout << "lvec[" << n << "]={";
       for (UInt i = 0; i < dimM; i++)

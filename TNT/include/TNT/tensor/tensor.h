@@ -165,8 +165,8 @@ namespace TNT::Tensor {
     std::tuple<Tensor<F>, Tensor<F>> SVD(std::array<std::string, 2> subscript,
                                          const SVDOptions &options = SVDOptions{}) const;
 
-    std::tuple<Tensor<F>, Tensor<F>> SVD2(std::array<std::string, 2> subscript,
-                                          const SVDOptions &options = SVDOptions{}) const;
+    // std::tuple<Tensor<F>, Tensor<F>> SVD2(std::array<std::string, 2> subscript,
+    //                                      const SVDOptions &options = SVDOptions{}) const;
 
     std::tuple<Tensor<F>, Tensor<F>> SVD(std::array<std::string, 2> subscript, const Tensor<F> &left,
                                          const Tensor<F> &right, const SVDOptions &options = SVDOptions{}) const;

@@ -52,7 +52,6 @@ void tensorVec(void *x, PRIMME_INT *ldx, void *y, PRIMME_INT *ldy, int *blockSiz
     seq.dims.insert(seq.dims.begin(), mdata->dim);
     seq.subs.insert(seq.subs.begin(), mdata->subs[0]);
     seq.data.insert(seq.data.begin(), (F *)x + (*ldx) * i);
-    // seq.data.back() = (F *)x + (*ldx) * i;
     *ierr = TNT::Algebra::tensorMult<F>((F *)y + (*ldy) * i, mdata->subs[1], seq);
   }
 }

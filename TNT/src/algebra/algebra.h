@@ -48,9 +48,11 @@ namespace TNT::Algebra {
 
     Options() {}
     Options(const UInt &nv) : nv{nv} {}
+    Options(const UInt &nv, const double &tolerance) : nv{nv}, tolerance{tolerance} {}
     Options(const UInt &nv, const double &tolerance, const double &aNorm)
         : nv{nv}, tolerance{tolerance}, aNorm{aNorm} {}
-
+    Options(const UInt &nv, const double &tolerance, const Target &target)
+        : nv{nv}, tolerance{tolerance}, target{target} {}
     Options(const UInt &nv, const double &tolerance, const double &aNorm, const Target &target)
         : nv{nv}, tolerance{tolerance}, aNorm{aNorm}, target{target} {}
 
@@ -102,16 +104,16 @@ namespace TNT::Algebra {
 
   /* @TODO: Document side data structure
    */
-  template <typename F>
-  int tensorSVD(int idx, const std::vector<UInt> &dim, F *data, F *side, const Options &options = Options{});
+  // template <typename F>
+  // int tensorSVD(int idx, const std::vector<UInt> &dim, F *data, F *side, const Options &options = Options{});
 
   // template <typename F>
   // int tensorSVD(const std::vector<UInt> &dim, const std::array<std::vector<UInt>, 2> &idx, double *svals, F *svecs,
   //              F *data, const Options &options = Options{});
 
   template <typename F>
-  int tensorSVD(const std::vector<UInt> &dim, const std::array<std::vector<UInt>, 2> &idx, double *svals, F *svecs,
-                const Tensor::Contraction<F> &seq, const Options &options = Options{});
+  int tensorSVD(const std::array<std::string, 2> &subs, const Tensor::Contraction<F> &seq, double *svals, F *svecs,
+                const Options &options = Options{});
 
   template <typename F>
   int tensorSVD(const std::vector<UInt> &dim, const std::array<std::vector<UInt>, 2> &idx, double *svals, F *svecs,

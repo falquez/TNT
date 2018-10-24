@@ -28,14 +28,6 @@
 #include <hptt/hptt.h>
 #include <tcl/tcl.h>
 
-#include <unistd.h>
-
-unsigned long long getTotalSystemMemory() {
-  long pages = sysconf(_SC_PHYS_PAGES);
-  long page_size = sysconf(_SC_PAGE_SIZE);
-  return pages * page_size;
-}
-
 namespace TNT::Algebra {
 
   template <typename F>
@@ -58,10 +50,10 @@ namespace TNT::Algebra {
     int err = 0;
     int prev = 0, curr = 0;
 
-    // std::cout << "DEBUG: tensorMult(" << subscript << ") <-";
-    // for (const auto s : seq.subs)
-    //  std::cout << "(" << s << ")*";
-    // std::cout << std::endl;
+    std::cout << "DEBUG: tensorMult(" << subscript << ") <-";
+    for (const auto s : seq.subs)
+      std::cout << "(" << s << ")*";
+    std::cout << std::endl;
 
     std::array<std::unique_ptr<F[]>, 2> buff;
     std::array<std::string, 2> sub;
@@ -75,6 +67,11 @@ namespace TNT::Algebra {
     dims = std::vector<int>(seq.dims[0].begin(), seq.dims[0].end());
     T[curr] = tcl::Tensor<F>(dims, seq.data[0]);
 
+    std::cout << "curr[0]={";
+    for (int j = 0; j < Util::multiply<int>(dims); j++)
+      std::cout << seq.data[0][j] << ",";
+    std::cout << "}" << std::endl;
+
     for (UInt i = 1; i < seq.data.size(); i++) {
       prev = (i - 1) % 2;
       curr = i % 2;
@@ -85,6 +82,11 @@ namespace TNT::Algebra {
 
       dims = std::vector<int>(seq.dims[i].begin(), seq.dims[i].end());
       T[curr] = tcl::Tensor<F>(dims, seq.data[i]);
+
+      std::cout << "curr[" << i << "]={";
+      for (int j = 0; j < Util::multiply<int>(dims); j++)
+        std::cout << seq.data[i][j] << ",";
+      std::cout << "}" << std::endl;
 
       std::vector<std::string> idx3;
       std::set_symmetric_difference(idx[prev].begin(), idx[prev].end(), idx[curr].begin(), idx[curr].end(),
@@ -97,15 +99,20 @@ namespace TNT::Algebra {
       std::vector<unsigned long long> dim3l(dim3.begin(), dim3.end());
       unsigned long long size3 = Util::multiply<unsigned long long>(dim3l);
 
-      // std::cout << "DEBUG: Allocating T(" << sub3 << ") <- T1(" << sub[prev] << ") *T2(" << sub[curr] << ") dim=(";
-      // for (const auto c : idx3)
-      //  std::cout << seq.dim_map.at(c) << ",";
-      // std::cout << ") size=" << size3 << " MB=" << (size3 * sizeof(F)) / (1E6) << "MB" << std::endl;
+      std::cout << "DEBUG: Allocating T(" << sub3 << ") <- T1(" << sub[prev] << ") *T2(" << sub[curr] << ")dim=(";
+      for (const auto c : idx3)
+        std::cout << seq.dim_map.at(c) << ",";
+      std::cout << ") size=" << size3 << " MB=" << (size3 * sizeof(F)) / (1E6) << std::endl;
 
       buff[curr] = std::make_unique<F[]>(size3);
       tcl::Tensor<F> T3(dim3, buff[curr].get());
 
       err = tcl::tensorMult<F>(1.0, T[prev][sub[prev]], T[curr][sub[curr]], 0.0, T3[sub3]);
+
+      std::cout << "curr={";
+      for (int j = 0; j < size3; j++)
+        std::cout << buff[curr][j] << ",";
+      std::cout << "}" << std::endl;
 
       if (err != 0) {
         std::cout << "TensorMult Error: " << err << std::endl;
