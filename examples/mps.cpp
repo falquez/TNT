@@ -44,7 +44,6 @@ std::string format(unsigned int n, unsigned int w = 4) {
 int main(int argc, char **argv) {
   using namespace TNT;
   int err = 0;
-  // feenableexcept(FE_INVALID | FE_OVERFLOW);
 
   if (argc == 1) {
     std::cout << argv[0] << " <configuration.json>";
@@ -59,8 +58,7 @@ int main(int argc, char **argv) {
   const auto L = config.network.length;
   const auto results_dir = config.directory("results");
   const auto network_dir = config.directory("network");
-
-  const unsigned int n_max = 10;
+  const unsigned int n_max = config.hamiltonian.n_max;
 
   for (const auto [p_i, params] : parameters.iterate()) {
 
@@ -70,15 +68,8 @@ int main(int argc, char **argv) {
 
     for (unsigned int n = 0; n < n_max; n++) {
       const Operator::MPO<NumericalType> W(config, params);
-
       std::cout << "Calculate W2" << std::endl;
       const auto W2 = W * W;
-      std::cout << "Calculate W2c" << std::endl;
-      auto W2c = W * W;
-      W2c.compress(3 * W.dimW(), 1E-6);
-
-      std::cout << "W2=" << W2 << std::endl;
-      std::cout << "W2c=" << W2c << std::endl;
 
       const auto output_dir = config.directory("results") + "/" + format(n) + "/" + format(p_i) + "/";
       const auto network_dir = output_dir + config.directory("network") + "/";
@@ -114,34 +105,23 @@ int main(int argc, char **argv) {
       std::vector<Tensor::Tensor<NumericalType>> LC(L + 1);
       std::vector<Tensor::Tensor<NumericalType>> RC(L + 1);
 
-      // std::vector<Tensor::Tensor<NumericalType>> LC2(L + 1);
-      // std::vector<Tensor::Tensor<NumericalType>> RC2(L + 1);
-
       // Initialize Right Contractions
       std::cout << "INFO: Initializing Right Contractions" << std::endl;
       RC[L] = Tensor::Tensor<NumericalType>({1, 1, 1}, 1.0);
-      // RC2[L] = Tensor::Tensor<NumericalType>({1, 1, 1}, 1.0);
       for (unsigned int l = L - 1; l >= i_l; l--) {
         RC[l]("b1,a1,a1'") = A[n][l + 1]("s,a1,a2") * W[l + 1]("b1,b2,s,s'") * RC[l + 1]("b2,a2,a2'") *
                              A[n][l + 1].conjugate()("s',a1',a2'");
-        // RC2[l]("b1,a1,a1'") = A[n][l + 1]("s,a1,a2") * W2[l + 1]("b1,b2,s,s'") * RC2[l + 1]("b2,a2,a2'") *
-        //                      A[n][l + 1].conjugate()("s',a1',a2'");
       }
-
       // Initialize Left Contractions
       std::cout << "INFO: Initializing Left Contractions" << std::endl;
       LC[1] = Tensor::Tensor<NumericalType>({1, 1, 1}, 1.0);
-      // LC2[1] = Tensor::Tensor<NumericalType>({1, 1, 1}, 1.0);
       for (unsigned int l = 1; l < i_r; l++) {
         LC[l + 1]("b2,a2,a2'") =
             A[n][l]("s,a1,a2") * W[l]("b1,b2,s,s'") * LC[l]("b1,a1,a1'") * A[n][l].conjugate()("s',a1',a2'");
-        // LC2[l + 1]("b2,a2,a2'") =
-        //    A[n][l]("s,a1,a2") * W2[l]("b1,b2,s,s'") * LC2[l]("b1,a1,a1'") * A[n][l].conjugate()("s',a1',a2'");
       }
 
       // Start sweep loop
       for (const auto [l, r, dir] : A[n].sweep(state)) {
-
         // Define Eigensolver for Operator LW*W*W*RW
         Tensor::EigenSolver ES(LC[l]("b1,a1,a1'") * W[l]("b1,b2,s1,s1'") * W[r]("b2,b3,s3,s3'") * RC[r]("b3,a2,a2'"));
 
@@ -150,8 +130,7 @@ int main(int argc, char **argv) {
           Pr[n_i] = {A[n_i](A[n], {l, r}), {-E[n_i]}};
 
         // Optimize A[l]*A[l+1]
-        std::cout << "INFO: Optimize A[" << l << "]*A[" << r << "]"
-                  << ", tol=" << config.tolerance("eigenvalue") << std::endl;
+	std::cout << "INFO: Optimize A[" << l << "]*A[" << r << "]" << std::endl;
         auto [ew, T] = ES({{"s1,s3,a1,a2", "s1',s3',a1',a2'"}})
                            .useInitial()
                            .setTolerance(config.tolerance("eigenvalue"))
@@ -163,15 +142,9 @@ int main(int argc, char **argv) {
         auto norm = dir == Network::MPS::Sweep::Direction::Right ? Tensor::SVDNorm::left : Tensor::SVDNorm::right;
 
         // Perform SVD on T and reassign to A[l], A[r]
-        std::cout << "INFO: Decompose T into A[" << l << "]*A[" << r << "]"
-                  << " nsv=" << nsv << ", tol=" << config.tolerance("svd") << std::endl;
-        // if (nsv < 4)
+	std::cout << "INFO: Decompose T into A[" << l << "]*A[" << r << "]" << std::endl;
         std::tie(A[n][l], A[n][r]) =
             T("s1,s3,a1,a2").SVD({{"s1,a1,a3", "s3,a3,a2"}}, {norm, nsv, config.tolerance("svd")});
-        // else
-        //  std::tie(A[n][l], A[n][r]) =
-        //      T("s1,s3,a1,a2").SVD({{"s1,a1,a3", "s3,a3,a2"}}, A[n][l], A[n][r], {norm, nsv,
-        //      config.tolerance("svd")});
 
         // Store solutions to disk
         A[n][l].writeToFile(network_dir + format(l), "/Tensor");
@@ -183,38 +156,27 @@ int main(int argc, char **argv) {
         case Network::MPS::Sweep::Direction::Right:
           LC[r]("b2,a2,a2'") =
               A[n][l]("s,a1,a2") * W[w_lr]("b1,b2,s,s'") * LC[l]("b1,a1,a1'") * A[n][l].conjugate()("s',a1',a2'");
-          // LC2[r]("b2,a2,a2'") =
-          //    A[n][l]("s,a1,a2") * W2[w_lr]("b1,b2,s,s'") * LC2[l]("b1,a1,a1'") * A[n][l].conjugate()("s',a1',a2'");
+
           break;
         case Network::MPS::Sweep::Direction::Left:
           RC[l]("b1,a1,a1'") =
               A[n][r]("s,a1,a2") * W[w_lr]("b1,b2,s,s'") * RC[r]("b2,a2,a2'") * A[n][r].conjugate()("s',a1',a2'");
-          // RC2[l]("b1,a1,a1'") =
-          //    A[n][r]("s,a1,a2") * W2[w_lr]("b1,b2,s,s'") * RC2[r]("b2,a2,a2'") * A[n][r].conjugate()("s',a1',a2'");
           break;
         }
 
-        // std::cout << "INFO: Calculate A[" << n << "](W2) A" << std::endl;
-        // T("s1',a1',a'") = A[n][l]("s1,a1,a") * A[n][r]("s3,a,a2") * LC2[l]("b1,a1,a1'") * W2[l]("b1,b2,s1,s1'") *
-        //                  W2[r]("b2,b3,s3,s3'") * RC2[r]("b3,a2,a2'") * A[n][r].conjugate()("s3',a',a2'");
-        // NumericalType E2A = T("s1',a1',a'") * A[n][l].conjugate()("s1',a1',a'");
-        std::cout << "INFO: Calculate A[" << n << "](W2) B" << std::endl;
+	std::cout << "INFO: Calculate A[" << n << "](W2)" << std::endl;
         double E2 = A[n](W2);
-        double E2c = A[n](W2c);
 
-        double NV = params.at("VAR");
         E[n] = ew;
         state.eigenvalue = ew;
-        state.variance = (E2 - ew * ew) / (NV * L);
-        double variance2 = (E2c - ew * ew) / (NV * L);
+	state.variance = (E2 - ew * ew) / (ew * ew);
 
         std::cout << "INFO: n=" << n << " p=" << p_i << " swp=" << state.iteration / L;
         std::cout << " i=" << state.iteration << ", l=" << l << ", r=" << r << ", ";
         std::cout.precision(std::numeric_limits<double>::max_digits10);
         for (const auto &[name, value] : params)
           std::cout << name << "=" << value << ", ";
-        std::cout << "ev=" << state.eigenvalue << ", var=" << state.variance << ", var2=" << variance2;
-        std::cout << ", E2c=" << E2c << ", E2=" << E2 << ", E2-E2c=" << E2 - E2c;
+	std::cout << "ev=" << state.eigenvalue << ", var=" << state.variance;
         std::cout << ", w=" << state.eigenvalue / (2 * L * params.at("x"));
         std::cout << std::endl;
 
@@ -237,7 +199,9 @@ int main(int argc, char **argv) {
 
       // Write observables to text file
       for (const auto &[i_o, obs] : observables.iterate()) {
-        std::ofstream ofile(output_dir + obs.name + ".txt");
+	auto obsname = output_dir + obs.name + ".txt";
+	std::cout << "INFO: Writing" << obsname << std::endl;
+	std::ofstream ofile(obsname);
         auto result = A[n](obs);
         for (const auto &r : result) {
           for (const auto &s : r.site)
