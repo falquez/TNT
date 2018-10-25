@@ -68,7 +68,7 @@ int main(int argc, char **argv) {
 
     for (unsigned int n = 0; n < n_max; n++) {
       const Operator::MPO<NumericalType> W(config, params);
-      std::cout << "Calculate W2" << std::endl;
+      std::cout << "INFO: Calculate W2" << std::endl;
       const auto W2 = W * W;
 
       const auto output_dir = config.directory("results") + "/" + format(n) + "/" + format(p_i) + "/";
@@ -81,11 +81,11 @@ int main(int argc, char **argv) {
 
       Network::State state(output_dir + "state.json", config.restart);
       if (state.restarted) {
-        std::cout << "Restarting MPS A[" << n << "] from iteration " << state.iteration << std::endl;
+	std::cout << "INFO: Restarting MPS A[" << n << "] from iteration " << state.iteration << std::endl;
         for (unsigned int l = 1; l <= L; l++)
           A[n][l] = Tensor::Tensor<NumericalType>(network_dir + format(l), "/Tensor");
       } else {
-        std::cout << "Initializing MPS A[" << n << "]" << std::endl;
+	std::cout << "INFO: Initializing MPS A[" << n << "]" << std::endl;
         A[n].initialize();
         for (unsigned int l = 1; l <= L; l++)
           A[n][l].writeToFile(network_dir + format(l), "/Tensor");
@@ -164,14 +164,17 @@ int main(int argc, char **argv) {
           break;
         }
 
-	std::cout << "INFO: Calculate A[" << n << "](W2)" << std::endl;
-        double E2 = A[n](W2);
-
+	int swp = state.iteration / L;
+	double E2 = 0.0;
+	if (swp >= 2) {
+	  std::cout << "INFO: Calculate A[" << n << "](W2)" << std::endl;
+	  E2 = A[n](W2);
+	}
         E[n] = ew;
         state.eigenvalue = ew;
 	state.variance = (E2 - ew * ew) / (ew * ew);
 
-        std::cout << "INFO: n=" << n << " p=" << p_i << " swp=" << state.iteration / L;
+	std::cout << "INFO: n=" << n << " p=" << p_i << " swp=" << swp;
         std::cout << " i=" << state.iteration << ", l=" << l << ", r=" << r << ", ";
         std::cout.precision(std::numeric_limits<double>::max_digits10);
         for (const auto &[name, value] : params)
@@ -181,26 +184,30 @@ int main(int argc, char **argv) {
         std::cout << std::endl;
 
         // Write observables to text file
-        for (const auto &[i_o, obs] : observables.iterate()) {
-          std::ofstream ofile(output_dir + obs.name + ".txt");
-          auto result = A[n](obs);
-          for (const auto &r : result) {
-            for (const auto &s : r.site)
-              ofile << s << " ";
-            ofile.precision(std::numeric_limits<double>::max_digits10);
-            for (const auto &[n, v] : params)
-              ofile << v << " ";
-            ofile << state.eigenvalue << " " << state.variance << " ";
-            ofile << r.value << std::endl;
+	if (state.iteration % 5 == 0) {
+	  for (const auto &[i_o, obs] : observables.iterate()) {
+	    auto obsname = output_dir + obs.name + ".txt";
+	    std::cout << "INFO: Writing " << obsname << std::endl;
+	    std::ofstream ofile(obsname);
+	    auto result = A[n](obs);
+	    for (const auto &r : result) {
+	      for (const auto &s : r.site)
+		ofile << s << " ";
+	      ofile.precision(std::numeric_limits<double>::max_digits10);
+	      for (const auto &[n, v] : params)
+		ofile << v << " ";
+	      ofile << state.eigenvalue << " " << state.variance << " ";
+	      ofile << r.value << std::endl;
+	    }
+	    ofile << std::endl;
           }
-          ofile << std::endl;
-        }
+	}
       }
 
       // Write observables to text file
       for (const auto &[i_o, obs] : observables.iterate()) {
 	auto obsname = output_dir + obs.name + ".txt";
-	std::cout << "INFO: Writing" << obsname << std::endl;
+	std::cout << "INFO: Writing " << obsname << std::endl;
 	std::ofstream ofile(obsname);
         auto result = A[n](obs);
         for (const auto &r : result) {
@@ -215,6 +222,7 @@ int main(int argc, char **argv) {
         ofile << std::endl;
       }
 
+      std::cout << "INFO: Writing " << output_dir + "result.txt" << std::endl;
       std::ofstream ofile(output_dir + "result.txt");
       ofile << "# D L params.. E var" << std::endl;
       ofile << config.network.dimB << " " << L << " ";
