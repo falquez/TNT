@@ -47,8 +47,6 @@ target_link_libraries(
   PRIVATE openblas primme tcl hptt Boost::filesystem
 )
 
-
-
 #Unit tests
 add_executable(
   testTNT
@@ -59,4 +57,21 @@ add_executable(
 )
 target_link_libraries(testTNT TNT)
 add_test(NAME test COMMAND testTNT)
+
+##############################################
+# Installation instructions
+
+include(GNUInstallDirs)
+#set(INSTALL_CONFIGDIR ${CMAKE_INSTALL_LIBDIR}/cmake/JSONUtils)
+
+install(TARGETS TNT
+    EXPORT TNT-targets
+    LIBRARY DESTINATION ${CMAKE_INSTALL_LIBDIR}
+    ARCHIVE DESTINATION ${CMAKE_INSTALL_LIBDIR}
+)
+
+#This is required so that the exported target has the name JSONUtils and not jsonutils
+set_target_properties(TNT PROPERTIES EXPORT_NAME TNT)
+
+install(DIRECTORY include/ DESTINATION ${CMAKE_INSTALL_INCLUDEDIR})
 
