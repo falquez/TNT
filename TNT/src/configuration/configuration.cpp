@@ -42,6 +42,11 @@ namespace TNT::Configuration {
     // @TODO
     network.topology = Topology::MPS; // j["network"]["topology"]
 
+    eigensolver.use_initial = j["eigensolver"]["use_initial"];
+    eigensolver.min_sweeps = j["eigensolver"]["min_sweeps"];
+
+    output.iterations = j["output"]["iterations"];
+
     // Initialize operators
     // operators = Operators<F>(config_file);
 

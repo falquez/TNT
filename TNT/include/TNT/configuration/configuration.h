@@ -29,16 +29,19 @@
 namespace TNT::Configuration {
   enum class Topology { MPS };
 
-  struct Tolerance {
-    double convergence = 1E-6;
-    double eigenvalue = 1E-6;
-    double svd = 1E-8;
-  };
-
   struct Network {
     unsigned int length;
     unsigned int dimB;
     Topology topology;
+  };
+
+  struct Eigensolver {
+    unsigned int min_sweeps = 4;
+    bool use_initial = true;
+  };
+
+  struct Output {
+    unsigned int iterations = 10;
   };
 
   template <typename F>
@@ -53,11 +56,11 @@ namespace TNT::Configuration {
 
     double tolerance(const std::string &name) const { return tolerances.at(name); };
 
+    Eigensolver eigensolver;
     Network network;
     Hamiltonian hamiltonian;
     std::map<std::string, Constraint> constraints;
-    // std::map<std::string, Operator<F>> operators;
-
+    Output output;
     Parameters parameters;
     const std::string config_file;
 
