@@ -32,6 +32,7 @@
 #include "../../util/util.h"
 
 namespace TNT::Tensor::Sparse {
+
   std::vector<UInt> convertIndex(const std::vector<UInt> &stride, const ULong &i) {
     std::vector<UInt> idx(stride.size());
     idx.back() = i / stride.back();
@@ -202,6 +203,7 @@ namespace TNT::Tensor::Sparse {
 
     return *this;
   }
+
   template <typename F>
   Tensor<F> &Tensor<F>::merge(const std::string &mrg) {
     std::map<std::string, UInt> idx_map;
@@ -298,6 +300,7 @@ namespace TNT::Tensor::Sparse {
     }
     return trans;
   }
+
   template <typename F>
   Tensor<F> Tensor<F>::matricize(const std::vector<UInt> &idx_r, const std::vector<UInt> &idx_c) const {
     assert(idx_r.size() + idx_c.size() == dim.size());

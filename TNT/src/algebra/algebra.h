@@ -37,7 +37,7 @@ namespace TNT::Algebra {
 
   struct Options {
     UInt nv = 1;
-    double tolerance = 1e-9;
+    double tolerance = 1e-10;
     double aNorm = -1.0;
     Target target = Target::smallest;
     int initial = 0;
@@ -48,6 +48,7 @@ namespace TNT::Algebra {
 
     Options() {}
     Options(const UInt &nv) : nv{nv} {}
+    Options(const UInt &nv, const Target &target) : nv{nv}, target{target} {}
     Options(const UInt &nv, const double &tolerance) : nv{nv}, tolerance{tolerance} {}
     Options(const UInt &nv, const double &tolerance, const double &aNorm)
         : nv{nv}, tolerance{tolerance}, aNorm{aNorm} {}
