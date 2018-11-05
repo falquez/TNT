@@ -21,6 +21,7 @@
 #include <complex>
 #include <iostream>
 #include <map>
+#include <random>
 
 #include <TNT/storage/storage.h>
 #include <TNT/tensor/contraction.h>
@@ -31,6 +32,21 @@
 #include "../util/util.h"
 
 namespace TNT::Tensor {
+
+  std::vector<UInt> convertIndexL(const std::vector<UInt> &stride, const ULong &i) {
+    std::vector<UInt> idx(stride.size());
+    idx.back() = i / stride.back();
+    for (ulong p = 0; p < idx.size() - 1; p++)
+      idx[p] = (i % stride[p + 1]) / stride[p];
+    return idx;
+  }
+
+  ULong convertIndexL(const std::vector<UInt> &stride, const std::vector<UInt> &idx) {
+    ULong i = 0;
+    for (ulong p = 0; p < stride.size(); p++)
+      i += idx[p] * stride[p];
+    return i;
+  }
 
   template <typename F>
   Tensor<F>::Tensor(const std::vector<UInt> &dim) : dim{dim}, stride(dim.size()), sub{} {
@@ -102,6 +118,7 @@ namespace TNT::Tensor {
     for (UInt i = 0; i < totalDim; i++)
       data[i] = t.data[i];
   }
+
   template <typename F>
   Tensor<F>::Tensor(std::tuple<std::vector<UInt>, std::unique_ptr<F[]>> &&d) : dim{std::get<0>(d)}, stride(dim.size()) {
     // dim = std::get<0>(d);
@@ -132,6 +149,7 @@ namespace TNT::Tensor {
   F Tensor<F>::dot(const F *p) const {
     return TNT::BLAS::dot<F>(totalDim, {data.get(), p});
   }
+
   template <typename F>
   Tensor<F> &Tensor<F>::merge(const std::string &mrg) {
     std::map<std::string, UInt> idx_map;
@@ -167,6 +185,72 @@ namespace TNT::Tensor {
     throw std::invalid_argument("Not Implemented");
 
     return *this;
+  }
+
+  template <typename F>
+  Tensor<F> Tensor<F>::transpose(const std::vector<UInt> tidx) const {
+    assert(tidx.size() == dim.size());
+
+    std::vector<UInt> tdim(dim.size());
+    for (uint i = 0; i < dim.size(); i++)
+      tdim[i] = dim[tidx[i]];
+    Tensor<F> trans(tdim);
+
+    for (UInt l = 0; l < totalDim; l++) {
+      std::vector<UInt> idx_orig = convertIndexL(stride, l);
+      std::vector<UInt> idx(dim.size());
+      for (UInt i = 0; i < dim.size(); i++)
+        idx[i] = idx_orig[tidx[i]];
+      trans[idx] = data[l];
+    }
+
+    return trans;
+  }
+
+  template <typename F>
+  Tensor<F> Tensor<F>::matricize(const std::vector<UInt> &idx_r, const std::vector<UInt> &idx_c) const {
+    assert(idx_r.size() + idx_c.size() == dim.size());
+
+    UInt dim_r, dim_c;
+    std::vector<UInt> stride_r(idx_r.size());
+    std::vector<UInt> stride_c(idx_c.size());
+
+    dim_r = dim[idx_r[0]];
+    stride_r[0] = 1;
+    for (uint i = 1; i < idx_r.size(); i++) {
+      dim_r *= dim[idx_r[i]];
+      stride_r[i] = stride_r[i - 1] * dim[idx_r[i]];
+    }
+    dim_c = dim[idx_c[0]];
+    stride_c[0] = 1;
+    for (uint i = 1; i < idx_c.size(); i++) {
+      dim_c *= dim[idx_c[i]];
+      stride_c[i] = stride_c[i - 1] * dim[idx_c[i]];
+    }
+    Tensor<F> mat({dim_r, dim_c});
+
+    /*for (typename ConcurrentHashMap<std::vector<UInt>, F>::const_iterator it = data.begin(); it != data.end(); it++) {
+      std::vector<UInt> idx{0, 0};
+      for (uint i = 0; i < idx_r.size(); i++)
+        idx[0] += it->first[idx_r[i]] * stride_r[i];
+      for (uint i = 0; i < idx_c.size(); i++)
+        idx[1] += it->first[idx_c[i]] * stride_c[i];
+      mat.data.insert({idx, it->second});
+    }*/
+
+    for (UInt l = 0; l < totalDim; l++) {
+      std::vector<UInt> idx_orig = convertIndexL(stride, l);
+      std::vector<UInt> idx{0, 0};
+      // for (UInt j = 0; j < dim.size(); j++)
+      // idx[j] = idx_orig[tidx[j]];
+      for (uint i = 0; i < idx_r.size(); i++)
+        idx[0] += idx_orig[idx_r[i]] * stride_r[i];
+      for (uint i = 0; i < idx_c.size(); i++)
+        idx[1] += idx_orig[idx_c[i]] * stride_c[i];
+      mat[idx] = data[l];
+    }
+
+    return mat;
   }
 
   template <typename F>
@@ -322,11 +406,12 @@ namespace TNT::Tensor {
 
   template <typename F>
   Tensor<F> &Tensor<F>::initialize(const int &mod) {
-    for (UInt i = 0; i < totalDim; i++) {
-      if ((rand() % mod) == 0) {
-        data[i] = (rand() % 100) / 100.0;
-      }
-    }
+    std::mt19937 rng;
+    rng.seed(std::random_device()());
+    std::uniform_real_distribution<> d(0.0, 1.0);
+
+    for (UInt i = 0; i < totalDim; i++)
+      data[i] = d(rng);
     return *this;
   }
 
@@ -417,6 +502,13 @@ namespace TNT::Tensor {
 
     return std::make_tuple(std::move(T), std::move(R));
   }
+
+  /*template <typename F>
+  Tensor<F> Tensor<F>::matricize(const std::vector<UInt> &row_idx, const std::vector<UInt> &col_idx) const {
+    Tensor<F> T;
+
+    return std::move(T);
+  }*/
 
   /*template <typename F>
   std::tuple<Tensor<F>, Tensor<F>> Tensor<F>::SVD(std::array<std::string, 2> subscript,
@@ -540,8 +632,8 @@ namespace TNT::Tensor {
   }*/
 
   template <typename F>
-  std::tuple<Tensor<F>, Tensor<F>> Tensor<F>::SVD(std::array<std::string, 2> subscript,
-                                                  const SVDOptions &svdopts) const {
+  std::tuple<Tensor<F>, std::vector<double>, Tensor<F>> Tensor<F>::SVD(std::array<std::string, 2> subscript,
+                                                                       const SVDOptions &svdopts) const {
     int err = 0;
 
     std::array<Tensor<F>, 2> svd;
@@ -595,6 +687,8 @@ namespace TNT::Tensor {
     std::unique_ptr<F[]> lvecs = std::make_unique<F[]>(dimM * nvecs);
     std::unique_ptr<F[]> rvecs = std::make_unique<F[]>(dimN * nvecs);
 
+    std::vector<double> svd_values(svals.get(), svals.get() + nvecs);
+
     UInt ldM = dimM; // nvecs
     switch (svdopts.norm) {
     case SVDNorm::equal:
@@ -622,34 +716,6 @@ namespace TNT::Tensor {
       }
       break;
     }
-    /*std::cout << "tensor lvecs={";
-    for (UInt n = 0; n < dimM * nvecs; n++) {
-      std::cout << lvecs[n] << ",";
-    }
-    std::cout << "}" << std::endl;
-    std::cout << "tensor rvecs={";
-    for (UInt n = 0; n < dimN * nvecs; n++) {
-      std::cout << rvecs[n] << ",";
-    }
-    std::cout << "}" << std::endl;*/
-    /*for (UInt n = 0; n < nvecs; n++) {
-      std::cout << "tlvec[" << n << "]={";
-      for (UInt i = 0; i < dimM; i++)
-        std::cout << lvecs[n * dimM + i] << ",";
-      std::cout << "}" << std::endl;
-    }
-
-    for (UInt n = 0; n < nvecs; n++) {
-      std::cout << "trvec[" << n << "]={";
-      for (UInt i = 0; i < dimN; i++)
-        std::cout << rvecs[n * dimN + i] << ",";
-      std::cout << "}" << std::endl;
-    }
-
-    std::cout << "tsvals: ";
-    for (int i = 0; i < nvecs; i++)
-      std::cout << "[" << i << "]=" << svals[i] << ", ";
-    std::cout << std::endl;*/
 
     // Initialize dimension map
     for (UInt i = 0; i < index.size(); i++)
@@ -686,7 +752,7 @@ namespace TNT::Tensor {
     err = Algebra::transpose(dim_tr[0], links_tr[0], lvecs.get(), svd[0].data.get());
     err = Algebra::transpose(dim_tr[1], links_tr[1], rvecs.get(), svd[1].data.get());
 
-    return std::make_tuple(std::move(svd[0]), std::move(svd[1]));
+    return std::make_tuple(std::move(svd[0]), std::move(svd_values), std::move(svd[1]));
   }
 
   template <typename F>
@@ -874,15 +940,96 @@ namespace TNT::Tensor {
   }
 
   template <typename F>
+  std::vector<std::array<Tensor<F>, 2>> kronecker_SVD(const Tensor<F> &T) {
+
+    std::array<std::vector<UInt>, 2> links{{{0}, {1}}};
+
+    // M = A x B
+    auto M = T.matricize({0, 2}, {1, 3});
+    // std::cout << "M=" << M << std::endl;
+
+    std::vector<unsigned int> dim = M.dimension();
+
+    UInt dimM = dim[0];
+    UInt dimN = dim[1];
+    uint dimH = T.dimension()[0];
+
+    std::unique_ptr<F[]> data = std::make_unique<F[]>(M.size());
+    std::unique_ptr<double[]> svals = std::make_unique<double[]>(dimM);
+    std::unique_ptr<F[]> svecs = std::make_unique<F[]>(dimM * dimM + dimN * dimN);
+
+    M.writeTo(data.get());
+
+    std::cout << "data={";
+    for (UInt i = 0; i < M.size(); i++) {
+      if (std::abs(data[i]) > 1E-10) {
+        std::cout << i << ":" << data[i] << ",";
+      }
+    }
+    std::cout << "}" << std::endl;
+
+    std::cout << "data={";
+    for (UInt i = 0; i < dimM; i++) {
+      for (UInt j = 0; j < dimN; j++) {
+        if (std::abs(M[{i, j}]) > 1E-10) {
+          std::cout << "{" << i << "," << j << "}->" << M[{i, j}] << ",";
+        }
+      }
+    }
+    std::cout << "}" << std::endl;
+
+    auto opts = Algebra::Options(dimM, Algebra::Target::largest);
+
+    int nvecs = Algebra::tensorSVD(dim, links, svals.get(), svecs.get(), data.get(), opts);
+
+    std::vector<std::array<Tensor<F>, 2>> uv(nvecs);
+
+    std::cout << "svecs={";
+    for (UInt i = 0; i < dimM * dimM + dimN * dimN; i++) {
+      if (std::abs(svecs[i]) > 1E-10) {
+        std::cout << i << ":" << svecs[i] << ",";
+      }
+    }
+    std::cout << "}" << std::endl;
+
+    for (UInt n = 0; n < nvecs; n++) {
+      std::cout << "svals[" << n << "]=" << svals[n] << std::endl;
+      std::cout << "U[" << n << "]={";
+      for (UInt i = 0; i < dimM; i++) {
+        if (std::abs(svecs[n * dimM + i]) > 1E-10)
+          std::cout << i << ":" << svecs[n * dimM + i] << ",";
+      }
+      std::cout << "}" << std::endl;
+      std::cout << "V[" << n << "]={";
+      for (UInt i = 0; i < dimN; i++) {
+        if (std::abs(svecs[dimM * dimM + i * dimN + n]) > 1E-10)
+          std::cout << i << ":" << svecs[dimM * dimM + i * dimN + n] << ",";
+      }
+      std::cout << "}" << std::endl;
+    }
+
+    for (uint n = 0; n < nvecs; n++) {
+      uv[n][0] = Tensor<F>({dimH, dimH});
+      for (unsigned int row = 0; row < dim[0]; row++)
+        uv[n][0][{row / dimH, row % dimH}] = svecs[n * dim[0] + row] * std::sqrt(svals[n]);
+
+      uv[n][1] = Tensor<F>({dimH, dimH});
+      for (unsigned int row = 0; row < dim[1]; row++)
+        uv[n][1][{row / dimH, row % dimH}] = svecs[dimM * dim[0] + row * dim[1] + n] * std::sqrt(svals[n]);
+    }
+    return uv;
+  }
+
+  template <typename F>
   std::ostream &operator<<(std::ostream &out, const Tensor<F> &T) {
     out << "Tensor: [" << T.subscripts() << "](";
     for (auto const &d : T.dimension())
       out << d << ",";
     out << ")(" << T.size() << "):\n";
     out << "{";
-    for (int i = 0; i < T.size(); i++) {
-      if (std::abs(T[i]) > 10e-12)
-	std::cout << i << ":" << T[i] << ",";
+    for (unsigned int i = 0; i < T.size(); i++) {
+      if (std::abs(T[i]) > 1e-12)
+        std::cout << i << ":" << T[i] << ",";
     }
     out << "}";
     return out;
@@ -892,6 +1039,10 @@ namespace TNT::Tensor {
 
 template class TNT::Tensor::Tensor<double>;
 template class TNT::Tensor::Tensor<std::complex<double>>;
+
+template std::vector<std::array<TNT::Tensor::Tensor<double>, 2>> TNT::Tensor::kronecker_SVD(const Tensor<double> &T);
+template std::vector<std::array<TNT::Tensor::Tensor<std::complex<double>>, 2>>
+TNT::Tensor::kronecker_SVD(const Tensor<std::complex<double>> &T);
 
 template std::ostream &TNT::Tensor::operator<<<double>(std::ostream &, const Tensor<double> &);
 template std::ostream &TNT::Tensor::operator<<<std::complex<double>>(std::ostream &,

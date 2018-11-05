@@ -65,8 +65,8 @@ namespace TNT::Tensor {
   }
 
   template <typename F>
-  std::tuple<Tensor<F>, Tensor<F>> Contraction<F>::SVD(std::array<std::string, 2> subscript,
-                                                       const SVDOptions &svdopts) const {
+  std::tuple<Tensor<F>, std::vector<double>, Tensor<F>> Contraction<F>::SVD(std::array<std::string, 2> subscript,
+                                                                            const SVDOptions &svdopts) const {
     int err = 0;
 
     std::array<Tensor<F>, 2> svd;
@@ -110,9 +110,6 @@ namespace TNT::Tensor {
     std::unique_ptr<double[]> svals = std::make_unique<double[]>(svdopts.nsv);
     std::unique_ptr<F[]> svecs = std::make_unique<F[]>((dimM + dimN) * svdopts.nsv);
 
-    // std::unique_ptr<double[]> svals = std::make_unique<double[]>(dimM);
-    // std::unique_ptr<F[]> svecs = std::make_unique<F[]>(dimM * dimM + dimN * dimN);
-
     // double anorm = norm2();
     auto opts = Algebra::Options(svdopts.nsv, svdopts.tolerance, Algebra::Target::largest);
     opts.verbosity = svdopts.verbosity;
@@ -123,17 +120,7 @@ namespace TNT::Tensor {
     std::unique_ptr<F[]> lvecs = std::make_unique<F[]>(dimM * nvecs);
     std::unique_ptr<F[]> rvecs = std::make_unique<F[]>(dimN * nvecs);
 
-    /*std::cout << "nsv=" << svdopts.nsv << " nvecs=" << nvecs << " svals[" << nvecs << "]={";
-    for (unsigned int j = 0; j < nvecs; j++) {
-      std::cout << j << ":" << svals[j] << ", ";
-      // if(svals[j]<0)
-    }
-    std::cout << "}" << std::endl;
-
-    std::cout << "svecs[" << (dimM + dimN) * svdopts.nsv << "]={";
-    for (unsigned int j = 0; j < (dimM + dimN) * svdopts.nsv; j++)
-      std::cout << j << ":" << svecs[j] << ", ";
-    std::cout << "}" << std::endl;*/
+    std::vector<double> svd_values(svals.get(), svals.get() + nvecs);
 
     // UInt ldM = nvecs;
     switch (svdopts.norm) {
@@ -162,39 +149,6 @@ namespace TNT::Tensor {
       }
       break;
     }
-    /*std::cout << "lvecs={";
-    for (UInt n = 0; n < dimM * nvecs; n++) {
-      std::cout << "n:" << lvecs[n] << ",";
-    }
-    std::cout << "}" << std::endl;
-    std::cout << "rvecs={";
-    for (UInt n = 0; n < dimN * nvecs; n++) {
-      std::cout << "n:" << rvecs[n] << ",";
-    }
-    std::cout << "}" << std::endl;
-    for (UInt n = 0; n < nvecs; n++) {
-      std::cout << "slvec[" << n << "]={";
-      for (UInt i = 0; i < dimM; i++)
-	std::cout << lvecs[n * dimM + i] << ",";
-      std::cout << "}" << std::endl;
-    }
-
-    for (UInt n = 0; n < nvecs; n++) {
-      std::cout << "srvec[" << n << "]={";
-      for (UInt i = 0; i < dimN; i++)
-	std::cout << rvecs[n * dimN + i] << ",";
-      std::cout << "}" << std::endl;
-    }
-
-    std::cout << "ssvals: ";
-    for (int i = 0; i < nvecs; i++)
-      std::cout << "[" << i << "]=" << svals[i] << ", ";
-    std::cout << std::endl;*/
-
-    // Initialize dimension map
-    // for (UInt i = 0; i < index.size(); i++)
-    //  dim_map[index[i]] = dim[i];
-    // Only single subscript used
 
     // Initialize svd[n] with correct dimension
     for (UInt n = 0; n < 2; n++) {
@@ -227,7 +181,7 @@ namespace TNT::Tensor {
     err = Algebra::transpose(dim_tr[0], links_tr[0], lvecs.get(), svd[0].data.get());
     err = Algebra::transpose(dim_tr[1], links_tr[1], rvecs.get(), svd[1].data.get());
 
-    return std::make_tuple(std::move(svd[0]), std::move(svd[1]));
+    return std::make_tuple(std::move(svd[0]), std::move(svd_values), std::move(svd[1]));
   }
 
   template <typename F>

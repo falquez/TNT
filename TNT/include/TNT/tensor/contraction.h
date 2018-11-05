@@ -39,8 +39,8 @@ namespace TNT::Tensor {
 
     Contraction<F> &operator*(const Tensor<F> &t);
     operator F() const;
-    std::tuple<Tensor<F>, Tensor<F>> SVD(std::array<std::string, 2> subscript,
-                                         const SVDOptions &options = SVDOptions{}) const;
+    std::tuple<Tensor<F>, std::vector<double>, Tensor<F>> SVD(std::array<std::string, 2> subscript,
+                                                              const SVDOptions &options = SVDOptions{}) const;
 
     std::vector<std::vector<UInt>> dims;
     std::vector<std::string> subs;

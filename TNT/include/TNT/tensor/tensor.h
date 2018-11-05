@@ -25,8 +25,6 @@
 #include <memory>
 #include <vector>
 
-//#include <TNT/tensor/sparse/tensor.h>
-
 namespace TNT::Tensor {
 
   using UInt = unsigned int;
@@ -138,6 +136,9 @@ namespace TNT::Tensor {
 
     Tensor<F> trace(const std::string &idx) const;
 
+    Tensor<F> transpose(const std::vector<UInt> tidx) const;
+    Tensor<F> matricize(const std::vector<UInt> &row_idx, const std::vector<UInt> &col_idx) const;
+
     double norm2() const;
 
     // Sparse::Tensor<F> sparse();
@@ -163,8 +164,8 @@ namespace TNT::Tensor {
      *     B2("a1,s,s',a3") = Bu("a1,s,b")*Bv("b,s',a3");
      * then B == B2 up to numerical error
      */
-    std::tuple<Tensor<F>, Tensor<F>> SVD(std::array<std::string, 2> subscript,
-                                         const SVDOptions &options = SVDOptions{}) const;
+    std::tuple<Tensor<F>, std::vector<double>, Tensor<F>> SVD(std::array<std::string, 2> subscript,
+                                                              const SVDOptions &options = SVDOptions{}) const;
 
     // std::tuple<Tensor<F>, Tensor<F>> SVD2(std::array<std::string, 2> subscript,
     //                                      const SVDOptions &options = SVDOptions{}) const;
@@ -181,6 +182,9 @@ namespace TNT::Tensor {
     std::tuple<Tensor<F>, Tensor<F>> SVD(std::array<std::vector<UInt>, 2> links,
                                          const SVDOptions &options = SVDOptions{}) const;
   };
+
+  template <typename F>
+  std::vector<std::array<Tensor<F>, 2>> kronecker_SVD(const Tensor<F> &T);
 
   template <typename F = double>
   std::ostream &operator<<(std::ostream &out, const Tensor<F> &T);
