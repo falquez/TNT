@@ -22,15 +22,15 @@
         "operators": {
             "single": "E2 + y*(sgn(l)*N)",
             "nearest": [
-                [  "sqrt(x)*U1",  "sqrt(x)*V1" ],
-                [  "sqrt(x)*U2",  "sqrt(x)*V2" ],
-                [  "sqrt(x)*U3",  "sqrt(x)*V3" ],
-                [  "sqrt(x)*U4",  "sqrt(x)*V4" ],
-                [  "sqrt(x)*U5",  "sqrt(x)*V5" ],
-                [  "sqrt(x)*U6",  "sqrt(x)*V6" ],
-                [  "sqrt(x)*U7",  "sqrt(x)*V7" ],
-                [  "sqrt(x)*U8",  "sqrt(x)*V8" ],
-                [  "sqrt(x)*U9",  "sqrt(x)*V9" ],
+                [ "sqrt(x)*U1",  "sqrt(x)*V1"  ],
+                [ "sqrt(x)*U2",  "sqrt(x)*V2"  ],
+                [ "sqrt(x)*U3",  "sqrt(x)*V3"  ],
+                [ "sqrt(x)*U4",  "sqrt(x)*V4"  ],
+                [ "sqrt(x)*U5",  "sqrt(x)*V5"  ],
+                [ "sqrt(x)*U6",  "sqrt(x)*V6"  ],
+                [ "sqrt(x)*U7",  "sqrt(x)*V7"  ],
+                [ "sqrt(x)*U8",  "sqrt(x)*V8"  ],
+                [ "sqrt(x)*U9",  "sqrt(x)*V9"  ],
                 [ "sqrt(x)*U10", "sqrt(x)*V10" ],
                 [ "sqrt(x)*U11", "sqrt(x)*V11" ],
                 [ "sqrt(x)*U12", "sqrt(x)*V12" ]
@@ -88,10 +88,17 @@
         }
     },
     "parameters": {
-        "g": [0.0001, 0.001, 5],
-        "m": [0.0001, 0.001, 3],
+        "g": [0.0001, 0.01, 5],
+        "r": [0.4, 1.6, 4],
         "x": "1/(g*g)",
-        "y": "2*m/(g*g)"
+        "y": "2*r/g"
     },
-    "restart": false
+    "eigensolver": {
+        "min_sweeps": 4,
+        "use_initial": true
+    },
+    "output": {
+        "iterations": 10
+    },
+    "restart": true
 }
