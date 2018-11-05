@@ -46,6 +46,12 @@ namespace TNT::Storage {
       std::vector<hsize_t> dim;
       std::vector<hsize_t> max_dim;
       std::unique_ptr<F[]> data;
+      Dense() {}
+      Dense(const std::vector<unsigned int> &_dim, const unsigned long size) {
+        for (const auto &d : _dim)
+          dim.push_back(d);
+        data = std::make_unique<F[]>(size);
+      }
     };
 
     template <typename F>

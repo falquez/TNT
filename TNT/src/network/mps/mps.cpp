@@ -34,23 +34,8 @@ namespace TNT::Network::MPS {
       : dimH{dimH}, dimB{dimB}, length{length}, conv_tolerance{1E-6} {
 
     _A = std::vector<Tensor::Tensor<F>>(length);
-
-    /*unsigned int lDim = 1;
-    for (ULong l = 0; l < length / 2; l++) {
-      unsigned int rDim = std::min(lDim * dimH, dimB);
-      _A[l] = Tensor::Tensor<F>({dimH, lDim, rDim});
-      lDim = rDim;
-    }
-    unsigned int rDim = 1;
-    for (ULong l = length - 1; l >= length / 2; l--) {
-      unsigned int lDim = std::min(rDim * dimH, dimB);
-      _A[l] = Tensor::Tensor<F>({dimH, lDim, rDim});
-      rDim = lDim;
-    }
-    for (ULong l = 0; l < _A.size(); l++) {
-      _A[l].initialize();
-      _A[l].normalize_QRD(1);
-    }*/
+    _S = std::vector<std::vector<double>>(length - 1);
+    _mbd = std::vector<unsigned int>(length);
   }
 
   template <typename F>
@@ -65,58 +50,16 @@ namespace TNT::Network::MPS {
     conv_tolerance = conf.tolerance("convergence");
 
     _A = std::vector<Tensor::Tensor<F>>(length);
-    //_LC = std::vector<Tensor::Tensor<F>>(length + 1);
-    //_RC = std::vector<Tensor::Tensor<F>>(length + 1);
+    _S = std::vector<std::vector<double>>(length - 1);
+    _mbd = std::vector<unsigned int>(length + 1);
 
-    /*if (conf.restart) {
-      throw std::invalid_argument("Restart not implemented");
-      // for(unsigned int l=0;l<length;l++){
-      //_A[l] =
-      // Tensor::Tensor<F>(output_dir+"/MPS/"+Util::format(l,length)+".hdf5",
-      //"/Tensor");
-      //}
-    } else {
-      unsigned int lDim = 1;
-      for (ULong l = 0; l < length / 2; l++) {
-        unsigned int rDim = std::min(lDim * dimH, dimB);
-        _A[l] = Tensor::Tensor<F>({dimH, lDim, rDim});
-        lDim = rDim;
-      }
-      unsigned int rDim = 1;
-      for (ULong l = length - 1; l >= length / 2; l--) {
-        unsigned int lDim = std::min(rDim * dimH, dimB);
-        _A[l] = Tensor::Tensor<F>({dimH, lDim, rDim});
-        rDim = lDim;
-      }
-      for (ULong l = 0; l < _A.size(); l++) {
-        _A[l].initialize(2);
-        _A[l].normalize_QRD(1);
-      }
-      }*/
+    _mbd[0] = 1;
+    for (ULong l = 1; l < length / 2; l++)
+      _mbd[l] = std::min(_mbd[l - 1] * dimH, dimB);
 
-    /*
-    // Initialize Right Contractions
-    // std::cout << "Initializing Right Contractions" << std::endl;
-    _RC[L] = Tensor::Tensor<F>({1, 1, 1}, 1.0);
-    for (unsigned int l = L - 1; l >= i_l; l--) {
-      Tensor::Tensor DW(W[l + 1]);
-      RC[l]("b1,a1,a1'") =
-          A[n][l + 1]("s,a1,a2") * DW("b1,b2,s,s'") * RC[l + 1]("b2,a2,a2'") * A[n][l + 1].conjugate()("s',a1',a2'");
-    }
-
-    // Initialize Left Contractions
-    // std::cout << "Initializing Left Contractions" << std::endl;
-    LC[1] = Tensor::Tensor<NumericalType>({1, 1, 1}, 1.0);
-    for (unsigned int l = 1; l < i_r; l++) {
-      Tensor::Tensor DW(W[l]);
-      LC[l + 1]("b2,a2,a2'") =
-          A[n][l]("s,a1,a2") * DW("b1,b2,s,s'") * LC[l]("b1,a1,a1'") * A[n][l].conjugate()("s',a1',a2'");
-    }*/
-
-    // for(ULong l=0;l<length;l++){
-    // Tensor::writeToFile(_A[l],
-    // output_dir+"/MPS/"+Util::format(l,length)+".hdf5");
-    //}
+    _mbd[length] = 1;
+    for (ULong l = length - 1; l >= length / 2; l--)
+      _mbd[l] = std::min(_mbd[l + 1] * dimH, dimB);
   }
 
   template <typename F>
@@ -134,7 +77,7 @@ namespace TNT::Network::MPS {
       rDim = lDim;
     }
     for (ULong l = 0; l < _A.size(); l++) {
-      _A[l].initialize(2);
+      _A[l].initialize();
       _A[l].normalize_QRD(1);
     }
     return *this;
@@ -172,6 +115,24 @@ namespace TNT::Network::MPS {
       int next = (l + 1) % 2;
       Tensor::Tensor<F> _Ac = _A[l].conjugate();
       T[next]("b2,a2,a2'") = T[curr]("b1,a1,a1'") * _A[l]("s1,a1,a2") * W("b1,b2,s1,s1'") * _Ac("s1',a1',a2'");
+    }
+
+    F result = T[length % 2][0];
+
+    return result;
+  }
+
+  template <typename F>
+  F MPS<F>::norm() const {
+    // assert(length == B.length && dimH == B.dimH);
+    std::array<Tensor::Tensor<F>, 2> T;
+
+    T[0] = Tensor::Tensor<F>({1, 1}, 1.0);
+    for (unsigned int l = 0; l < length; l++) {
+      unsigned int curr = l % 2;
+      unsigned int next = (l + 1) % 2;
+      // Tensor::Tensor<F> _Ac = _A[l].conjugate();
+      T[next]("a2,a2'") = T[curr]("a1,a1'") * _A[l]("s1,a1,a2") * _A[l].conjugate()("s1,a1',a2'");
     }
 
     F result = T[length % 2][0];
@@ -332,32 +293,6 @@ namespace TNT::Network::MPS {
     }
     return result;
   }
-
-  /*template <typename F>
-  std::map<std::array<ULong, 2>, F> MPS<F>::correlation(const Tensor::Tensor<F> &O) const {
-    std::map<std::array<ULong, 2>, F> res;
-    for (unsigned int l1 = 0; l1 < length; l1++) {
-      for (unsigned int l2 = l1; l2 < length; l2++) {
-
-        std::array<Tensor::Tensor<F>, 2> T;
-        T[0] = Tensor::Tensor<F>({1, 1}, 1.0);
-
-        for (unsigned int l = 0; l < length; l++) {
-          int curr = l % 2;
-          int next = (l + 1) % 2;
-          Tensor::Tensor<F> _Ac = _A[l].conjugate();
-          if (l == l1 || l == l2) {
-            T[next]("a2,a2'") = T[curr]("a1,a1'") * _A[l]("s1,a1,a2") * O("s1,s2") * _Ac("s2,a1',a2'");
-          } else {
-            T[next]("a2,a2'") = T[curr]("a1,a1'") * _A[l]("s1,a1,a2") * _Ac("s1,a1',a2'");
-          }
-        }
-        res[{l1, l2}] = T[length % 2][0];
-      }
-    }
-
-    return res;
-  }*/
 
   template <typename F>
   std::tuple<ULong, ULong, Sweep::Direction> MPS<F>::position(const State &state) const {

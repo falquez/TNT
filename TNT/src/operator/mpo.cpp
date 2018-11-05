@@ -167,8 +167,9 @@ namespace TNT::Operator {
 
       auto options = Tensor::SVDOptions{Tensor::SVDNorm::equal, dimW, tolerance};
 
+      std::vector<double> svs;
       Tensor::Contraction<F> ct = W[l]("b1,b,a1,a1'") * W[r]("b,b2,a2,a2'");
-      std::tie(T1, T2) = ct.SVD({"b1,b,a1,a1'", "b,b2,a2,a2'"}, options);
+      std::tie(T1, svs, T2) = ct.SVD({"b1,b,a1,a1'", "b,b2,a2,a2'"}, options);
 
       W[l] = T1;
       W[r] = T2;

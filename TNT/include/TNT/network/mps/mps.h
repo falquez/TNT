@@ -44,11 +44,8 @@ namespace TNT::Network::MPS {
     unsigned int dimB;
     ULong length;
     std::vector<Tensor::Tensor<F>> _A;
-
-    // Right and Left Contractions
-    // 1 and L are boundary sites
-    // std::vector<Tensor::Tensor<F>> _LC;
-    // std::vector<Tensor::Tensor<F>> _RC;
+    std::vector<std::vector<double>> _S;
+    std::vector<unsigned int> _mbd;
 
     std::string sub;
 
@@ -70,6 +67,11 @@ namespace TNT::Network::MPS {
     }
 
     Tensor::Tensor<F> &operator[](unsigned int site) { return _A[site - 1]; }
+    std::vector<double> &SV(unsigned int site) { return _S[site - 1]; }
+
+    unsigned int mbd(unsigned int site) const { return _mbd[site]; }
+    // Norm
+    F norm() const;
 
     // Scalar product <A|B>
     F operator()(const MPS<F> &B) const;
