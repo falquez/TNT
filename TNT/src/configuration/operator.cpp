@@ -71,7 +71,6 @@ namespace TNT::Configuration {
 	storage.read(op.path, size);
 	op.size = size.value;
       }
-      // operators.push_back(op);
       result.emplace(name, op);
     }
     return result;

@@ -62,29 +62,24 @@
     },
     "operators": {
         "E2": {
-            "file": "hamiltonian2_4.hdf5",
-            "path": "/HilbertSpace/Operator/E2",
-            "sparse": true
+            "file": "ksh-4.hdf5",
+            "path": "/HilbertSpace/Operator/E2"
         },
         "F2": {
-            "file": "hamiltonian2_4.hdf5",
-            "path": "/HilbertSpace/Operator/F2",
-            "sparse": true
+            "file": "ksh-4.hdf5",
+            "path": "/HilbertSpace/Operator/F2"
         },
         "N": {
-            "file": "hamiltonian2_4.hdf5",
-            "path": "/HilbertSpace/Operator/N",
-            "sparse": true
+            "file": "ksh-4.hdf5",
+            "path": "/HilbertSpace/Operator/N"
         },
         "U": {
-            "file": "hamiltonian2_4.hdf5",
-            "path": "/HilbertSpace/Operator/U",
-            "sparse": true
+            "file": "ksh-4.hdf5",
+            "path": "/HilbertSpace/Operator/U"
         },
         "V": {
-            "file": "hamiltonian2_4.hdf5",
-            "path": "/HilbertSpace/Operator/V",
-            "sparse": true
+            "file": "ksh-4.hdf5",
+            "path": "/HilbertSpace/Operator/V"
         }
     },
     "parameters": {

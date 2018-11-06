@@ -49,21 +49,22 @@ int main(int argc, char **argv) {
     std::cout << argv[0] << " <configuration.json>";
     exit(0);
   }
-  std::string config_file(argv[1]);
+  const std::string config_file(argv[1]);
 
   // Read configuration
   const Configuration::Configuration<NumericalType> config(config_file);
-  const auto parameters = config.parameters;
 
+  const auto parameters = config.parameters;
   const auto L = config.network.length;
+  const auto n_max = config.hamiltonian.n_max;
+
   const auto results_dir = config.directory("results");
   const auto network_dir = config.directory("network");
-  const unsigned int n_max = config.hamiltonian.n_max;
 
   for (const auto [p_i, params] : parameters.iterate()) {
 
-    const TNT::Configuration::Observables<NumericalType> observables(config.config_file, params);
-    std::vector<Network::MPS::MPS<NumericalType>> A;
+    const Configuration::Observables<NumericalType> observables(config.config_file, params);
+    std::vector<Network::MPS::MPS<NumericalType>> A(n_max);
     std::vector<NumericalType> E(n_max);
 
     for (unsigned int n = 0; n < n_max; n++) {
@@ -77,7 +78,7 @@ int main(int argc, char **argv) {
       boost::filesystem::create_directories(network_dir);
 
       // Create new MPS
-      A.push_back(Network::MPS::MPS<NumericalType>(config));
+      A[n] = Network::MPS::MPS<NumericalType>(config);
 
       Network::State state(output_dir + "state.json", config.restart);
       if (state.restarted) {
@@ -138,9 +139,6 @@ int main(int argc, char **argv) {
                            .setTolerance(config.tolerance("eigenvalue"))
                            .optimize(A[n][l]("s1,a1,a") * A[n][r]("s3,a,a2"), Pr);
 
-        // @TODO: read max bond dimension from predefined vector, not current dim
-        // auto nsv = A[n][l]("s1,a1,a").dimension("a");
-
         auto norm = dir == Network::MPS::Sweep::Direction::Right ? Tensor::SVDNorm::left : Tensor::SVDNorm::right;
 
         // Perform SVD on T and reassign to A[l], A[r]
@@ -189,6 +187,7 @@ int main(int argc, char **argv) {
         std::cout.precision(std::numeric_limits<double>::max_digits10);
         for (const auto &[name, value] : params)
           std::cout << name << "=" << value << " ";
+	std::cout << " w=" << state.eigenvalue / (2 * L * params.at("x")) << " ";
         std::cout << "ev=" << state.eigenvalue << " var=" << state.variance;
         std::cout << std::endl;
 
