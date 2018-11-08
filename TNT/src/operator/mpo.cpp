@@ -44,15 +44,19 @@ namespace TNT::Operator {
   }
 
   template <typename F>
-  MPO<F>::MPO(const Configuration::Configuration<F> &conf, const std::map<std::string, double> &P) : P{P} {
+  MPO<F>::MPO(const std::string &config_file, const Configuration::MPO &mpo, const std::map<std::string, double> &P,
+              const std::map<std::string, Configuration::Constraint> &C)
+      : P{P}, config_file{config_file} {
 
-    const auto H = conf.hamiltonian;
-    const auto parser = Parser::Parser<Tensor::Tensor<F>, F>(conf.config_file, P);
+    // const auto H = conf.hamiltonian;
+    const auto parser = Parser::Parser<Tensor::Tensor<F>, F>(config_file, P);
 
-    _length = conf.network.length;
+    _length = mpo.length;
     _dimH = parser.dimH;
     /*@TODO: generalize this */
-    _dimW = H.nearest.size() + 2;
+    _dimW = mpo.nearest.size() + 2;
+
+    std::cout << "length=" << _length << std::endl;
 
     W = std::vector<Tensor::Tensor<F>>(_length);
 
@@ -60,15 +64,15 @@ namespace TNT::Operator {
       if (l == 0) {
         W[l] = Tensor::Tensor<F>({1, _dimW, _dimH, _dimH});
         // Parse single site
-        if (H.single_site) {
-          Tensor::Tensor<F> res = parser.parse(*H.single_site, l);
+        if (mpo.single_site) {
+          Tensor::Tensor<F> res = parser.parse(*mpo.single_site, l);
           for (unsigned int i = 0; i < _dimH; i++)
             for (unsigned int j = 0; j < _dimH; j++)
               W[l][{0, 0, i, j}] = res[{i, j}];
         }
         // Parse nearest neighbourg interaction
-        for (unsigned int k = 1; k <= H.nearest.size(); k++) {
-          const auto &[left, right] = H.nearest[k - 1];
+        for (unsigned int k = 1; k <= mpo.nearest.size(); k++) {
+          const auto &[left, right] = mpo.nearest[k - 1];
           Tensor::Tensor<F> res = parser.parse(left, l);
           for (unsigned int i = 0; i < _dimH; i++)
             for (unsigned int j = 0; j < _dimH; j++)
@@ -81,15 +85,15 @@ namespace TNT::Operator {
       if ((0 < l) && (l < _length - 1)) {
         W[l] = Tensor::Tensor<F>({_dimW, _dimW, _dimH, _dimH});
         // Parse single site
-        if (H.single_site) {
-          Tensor::Tensor<F> res = parser.parse(*H.single_site, l);
+        if (mpo.single_site) {
+          Tensor::Tensor<F> res = parser.parse(*mpo.single_site, l);
           for (unsigned int i = 0; i < _dimH; i++)
             for (unsigned int j = 0; j < _dimH; j++)
               W[l][{_dimW - 1, 0, i, j}] = res[{i, j}];
         }
         // Parse nearest neighbourg interaction
-        for (unsigned int k = 1; k <= H.nearest.size(); k++) {
-          const auto &[left, right] = H.nearest[k - 1];
+        for (unsigned int k = 1; k <= mpo.nearest.size(); k++) {
+          const auto &[left, right] = mpo.nearest[k - 1];
           Tensor::Tensor<F> res1 = parser.parse(left, l);
           Tensor::Tensor<F> res2 = parser.parse(right, l);
           for (unsigned int i = 0; i < _dimH; i++)
@@ -107,15 +111,15 @@ namespace TNT::Operator {
       if (l == _length - 1) {
         W[l] = Tensor::Tensor<F>({_dimW, 1, _dimH, _dimH});
         // Parse single site
-        if (H.single_site) {
-          Tensor::Tensor<F> res = parser.parse(*H.single_site, l);
+        if (mpo.single_site) {
+          Tensor::Tensor<F> res = parser.parse(*mpo.single_site, l);
           for (unsigned int i = 0; i < _dimH; i++)
             for (unsigned int j = 0; j < _dimH; j++)
               W[l][{_dimW - 1, 0, i, j}] = res[{i, j}];
         }
         // Parse nearest neighbourg interaction
-        for (unsigned int k = 1; k <= H.nearest.size(); k++) {
-          const auto &[left, right] = H.nearest[k - 1];
+        for (unsigned int k = 1; k <= mpo.nearest.size(); k++) {
+          const auto &[left, right] = mpo.nearest[k - 1];
           Tensor::Tensor<F> res = parser.parse(right, l);
           for (unsigned int i = 0; i < _dimH; i++)
             for (unsigned int j = 0; j < _dimH; j++)
@@ -125,6 +129,20 @@ namespace TNT::Operator {
         for (unsigned int i = 0; i < _dimH; i++)
           W[l][{0, 0, i, i}] = 1.0;
       }
+    }
+
+    for (const auto &[name, cnt] : C) {
+      Tensor::Tensor<F> T;
+      std::cout << "Constraint " << name << std::endl;
+      Tensor::Tensor<F> res = parser.parse(cnt.expression, cnt.site);
+      std::cout << "Site:" << cnt.site << " OP=" << res << std::endl;
+      unsigned int l = cnt.site - 1;
+      std::cout << "W=" << W[l] << std::endl;
+
+      T("b1,b2,a1',a2'") = W[l]("b1,b2,a1,a2") * res("a1',a1") * res.conjugate()("a2',a2");
+      W[l] = T;
+
+      std::cout << "PWP=" << W[l] << std::endl;
     }
   }
 

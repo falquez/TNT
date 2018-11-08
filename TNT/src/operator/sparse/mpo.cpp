@@ -87,15 +87,17 @@ namespace TNT::Operator::Sparse {
   }
 
   template <typename F>
-  MPO<F>::MPO(const Configuration::Configuration<F> &conf, const std::map<std::string, double> &P) : P{P} {
+  MPO<F>::MPO(const Configuration::Configuration<F> &conf, const Configuration::MPO &mpo,
+              const std::map<std::string, double> &P)
+      : P{P} {
 
-    const auto H = conf.hamiltonian;
+    // const auto H = conf.hamiltonian;
     const auto parser = Parser::Parser<Tensor::Sparse::Tensor<F>, F>(conf.config_file, P);
 
     _length = conf.network.length;
     _dimH = parser.dimH;
     /*@TODO: generalize this */
-    _dimW = +H.nearest.size() + 2;
+    _dimW = mpo.nearest.size() + 2;
 
     // std::cout << "Initializing Sparse::MPO";
     // std::cout << " length=" << _length << " dimH=" << _dimH << " dimW=" << _dimW;
@@ -106,14 +108,14 @@ namespace TNT::Operator::Sparse {
       if (l == 0) {
         W[l] = Tensor::Sparse::Tensor<F>({1, _dimW, _dimH, _dimH});
         // Parse single site
-        if (H.single_site) {
-          Tensor::Sparse::Tensor<F> res = parser.parse(*H.single_site, l);
+        if (mpo.single_site) {
+          Tensor::Sparse::Tensor<F> res = parser.parse(*mpo.single_site, l);
           for (const auto &[idx, v] : res.elements2())
             W[l] <<= {{0, 0, idx[0], idx[1]}, v};
         }
         // Parse nearest neighbourg interaction
-        for (unsigned int k = 1; k <= H.nearest.size(); k++) {
-          const auto &[left, right] = H.nearest[k - 1];
+        for (unsigned int k = 1; k <= mpo.nearest.size(); k++) {
+          const auto &[left, right] = mpo.nearest[k - 1];
           Tensor::Sparse::Tensor<F> res = parser.parse(left, l);
           for (const auto &[idx, v] : res.elements2())
             W[l] <<= {{0, k, idx[0], idx[1]}, v};
@@ -124,14 +126,14 @@ namespace TNT::Operator::Sparse {
       } else if ((0 < l) && (l < _length - 1)) {
         W[l] = Tensor::Sparse::Tensor<F>({_dimW, _dimW, _dimH, _dimH});
         // Parse single site
-        if (H.single_site) {
-          Tensor::Sparse::Tensor<F> res = parser.parse(*H.single_site, l);
+        if (mpo.single_site) {
+          Tensor::Sparse::Tensor<F> res = parser.parse(*mpo.single_site, l);
           for (const auto &[idx, v] : res.elements2())
             W[l] <<= {{_dimW - 1, 0, idx[0], idx[1]}, v};
         }
         // Parse nearest neighbourg interaction
-        for (unsigned int k = 1; k <= H.nearest.size(); k++) {
-          const auto &[left, right] = H.nearest[k - 1];
+        for (unsigned int k = 1; k <= mpo.nearest.size(); k++) {
+          const auto &[left, right] = mpo.nearest[k - 1];
           for (const auto &[idx, v] : parser.parse(left, l).elements2())
             W[l] <<= {{_dimW - 1, k, idx[0], idx[1]}, v};
           for (const auto &[idx, v] : parser.parse(right, l).elements2())
@@ -145,14 +147,14 @@ namespace TNT::Operator::Sparse {
       } else if (l == _length - 1) {
         W[l] = Tensor::Sparse::Tensor<F>({_dimW, 1, _dimH, _dimH});
         // Parse single site
-        if (H.single_site) {
-          Tensor::Sparse::Tensor<F> res = parser.parse(*H.single_site, l);
+        if (mpo.single_site) {
+          Tensor::Sparse::Tensor<F> res = parser.parse(*mpo.single_site, l);
           for (const auto &[idx, v] : res.elements2())
             W[l] <<= {{_dimW - 1, 0, idx[0], idx[1]}, v};
         }
         // Parse nearest neighbourg interaction
-        for (unsigned int k = 1; k <= H.nearest.size(); k++) {
-          const auto &[left, right] = H.nearest[k - 1];
+        for (unsigned int k = 1; k <= mpo.nearest.size(); k++) {
+          const auto &[left, right] = mpo.nearest[k - 1];
           for (const auto &[idx, v] : parser.parse(right, l).elements2())
             W[l] <<= {{k, 0, idx[0], idx[1]}, v};
         }
