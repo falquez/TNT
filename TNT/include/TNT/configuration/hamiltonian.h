@@ -27,27 +27,17 @@
 namespace TNT::Configuration {
   enum class BoundaryCondition { Open, Periodic };
 
-  /*namespace Hamiltonian {
-    struct Operator {};
-  } // namespace Hamiltonian
-  namespace MPO {
-    struct Block {
-      std::vector<unsigned int> position;
-      std::optional<std::string> expression;
-      std::optional<std::string> name;
-    };
+  struct MPO {
+    unsigned int length;
+    std::optional<std::string> single_site = {};
+    std::vector<std::array<std::string, 2>> nearest;
+  };
 
-    struct MPO {
-      unsigned int dim;
-      std::vector<Block> blocks;
-    };
-  } // namespace MPO
-*/
   struct Hamiltonian {
     unsigned int dim;
     unsigned int n_max;
-    std::optional<std::string> single_site = {};
-    std::vector<std::array<std::string, 2>> nearest;
+    MPO mpo;
+    MPO projection;
   };
 
   struct Constraint {

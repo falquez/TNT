@@ -34,11 +34,6 @@ namespace TNT::Configuration {
     unsigned int size = 1;
     bool sparse = false;
     Operator(const std::string &name) : name{name} {}
-    /*Operator(const std::string &name, const std::vector<std::vector<F>> &rows)
-        : name{name}, rows{rows} {}
-    Operator(const std::string &name, const std::string &file,
-             const std::string &path, bool sparse, unsigned int size)
-        : name{name}, file{file}, path{path}, sparse{sparse}, size{size} {}*/
   };
 
   template <typename F>

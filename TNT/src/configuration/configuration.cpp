@@ -51,16 +51,25 @@ namespace TNT::Configuration {
     auto h_object = j["hamiltonian"];
     hamiltonian.dim = h_object["dim"];
     hamiltonian.n_max = h_object["n_max"];
+    hamiltonian.mpo.length = network.length;
     auto h_operator = h_object["operators"];
     if (h_operator.find("single") != h_operator.end()) {
-      hamiltonian.single_site = h_operator["single"].get<std::string>();
+      hamiltonian.mpo.single_site = h_operator["single"].get<std::string>();
     }
-
     if (h_operator.find("nearest") != h_operator.end()) {
       std::vector<nlohmann::json> pair_array = h_operator["nearest"];
       for (const auto &pair : pair_array) {
         std::vector<std::string> ops = pair;
-        hamiltonian.nearest.push_back({ops[0], ops[1]});
+        hamiltonian.mpo.nearest.push_back({ops[0], ops[1]});
+      }
+    }
+
+    auto h_projection = h_object["projection"];
+    if (h_projection.find("nearest") != h_projection.end()) {
+      std::vector<nlohmann::json> pair_array = h_projection["nearest"];
+      for (const auto &pair : pair_array) {
+        std::vector<std::string> ops = pair;
+        hamiltonian.projection.nearest.push_back({ops[0], ops[1]});
       }
     }
 
