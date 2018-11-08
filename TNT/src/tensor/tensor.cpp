@@ -1028,7 +1028,7 @@ namespace TNT::Tensor {
     out << ")(" << T.size() << "):\n";
     out << "{";
     for (unsigned int i = 0; i < T.size(); i++) {
-      if (std::abs(T[i]) > 1e-12)
+      if (std::abs(T[i]) > 1e-11)
         std::cout << i << ":" << T[i] << ",";
     }
     out << "}";

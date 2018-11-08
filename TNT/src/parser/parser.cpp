@@ -55,21 +55,21 @@ namespace TNT::Parser {
             o[{i, j}] = op.rows[i][j];
         O.emplace(name, o);
       } else if (op.sparse) {
-	// std::cout << "Reading sparse OP " << op.name << " " << op.size << " " << op.sparse << std::endl;
-	if (op.size > 1) {
-	  for (unsigned int i = 0; i < op.size; i++) {
-	    Tensor::Sparse::Tensor<double> o(op.file, op.path, i);
-	    O.emplace(name + std::to_string(i + 1), Tensor::Tensor<double>(o.dense()));
-	  }
-	} else {
-	  Tensor::Sparse::Tensor<double> o(op.file, op.path);
-	  O.emplace(name, Tensor::Tensor<double>(o.dense()));
-	}
+        // std::cout << "Reading sparse OP " << op.name << " " << op.size << " " << op.sparse << std::endl;
+        if (op.size > 1) {
+          for (unsigned int i = 0; i < op.size; i++) {
+            Tensor::Sparse::Tensor<double> o(op.file, op.path, i);
+            O.emplace(name + std::to_string(i + 1), Tensor::Tensor<double>(o.dense()));
+          }
+        } else {
+          Tensor::Sparse::Tensor<double> o(op.file, op.path);
+          O.emplace(name, Tensor::Tensor<double>(o.dense()));
+        }
       } else {
         if (op.size > 1) {
           for (unsigned int i = 0; i < op.size; i++) {
             Tensor::Tensor<double> o(op.file, op.path, i);
-	    O.emplace(name + std::to_string(i + 1), o);
+            O.emplace(name + std::to_string(i + 1), o);
           }
         } else {
           Tensor::Tensor<double> o(op.file, op.path);
@@ -87,7 +87,7 @@ namespace TNT::Parser {
 
   template <>
   Parser<Tensor::Sparse::Tensor<double>, double>::Parser(const std::string &config_file,
-							 const std::map<std::string, double> &P)
+                                                         const std::map<std::string, double> &P)
       : P{P} {
 
     // unsigned int dimH = conf.hamiltonian.dim;
@@ -161,7 +161,7 @@ namespace TNT::Parser {
 
   template <>
   Tensor::Sparse::Tensor<double> Parser<Tensor::Sparse::Tensor<double>, double>::parse(const std::string &s,
-										       int pos) const {
+                                                                                       int pos) const {
     using F = double;
     // std::cout << "Parsing expression: " << s << std::endl;
 
@@ -171,9 +171,9 @@ namespace TNT::Parser {
     compiler.setOperatorPrecedence("-", 6);
     compiler.setUnaryOperatorPrecedence("-", 3);
     compiler.setOperator<Tensor::Sparse::Tensor<F>, Tensor::Sparse::Tensor<F>>("+",
-									       [](auto l, auto r) { return l + r; });
+                                                                               [](auto l, auto r) { return l + r; });
     compiler.setOperator<Tensor::Sparse::Tensor<F>, Tensor::Sparse::Tensor<F>>("-",
-									       [](auto l, auto r) { return l - r; });
+                                                                               [](auto l, auto r) { return l - r; });
     compiler.setOperator<Tensor::Sparse::Tensor<F>, F>("*", [](auto l, auto r) { return l * r; });
     compiler.setOperator<F, Tensor::Sparse::Tensor<F>>("*", [](auto l, auto r) { return r * l; });
     compiler.setOperator<Tensor::Sparse::Tensor<F>, int>("*", [](auto l, auto r) { return l * static_cast<F>(r); });
