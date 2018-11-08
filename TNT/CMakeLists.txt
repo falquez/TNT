@@ -20,6 +20,7 @@ add_library(TNT
     src/operator/sparse/mpo.cpp
     src/operator/mpo.cpp
     src/operator/observable.cpp
+    src/operator/projection.cpp
     src/parser/parser.cpp
     src/storage/storage.cpp
     src/tensor/sparse/contraction.cpp
