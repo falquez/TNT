@@ -36,6 +36,14 @@ namespace TNT::Network::MPS {
     _A = std::vector<Tensor::Tensor<F>>(length);
     _S = std::vector<std::vector<double>>(length - 1);
     _mbd = std::vector<unsigned int>(length);
+
+    _mbd[0] = 1;
+    for (ULong l = 1; l < length / 2; l++)
+      _mbd[l] = std::min(_mbd[l - 1] * dimH, dimB);
+
+    _mbd[length] = 1;
+    for (ULong l = length - 1; l >= length / 2; l--)
+      _mbd[l] = std::min(_mbd[l + 1] * dimH, dimB);
   }
 
   template <typename F>
@@ -48,6 +56,7 @@ namespace TNT::Network::MPS {
     dimB = network.dimB;
     length = network.length;
     conv_tolerance = conf.tolerance("convergence");
+    config_file = conf.config_file;
 
     _A = std::vector<Tensor::Tensor<F>>(length);
     _S = std::vector<std::vector<double>>(length - 1);
@@ -82,6 +91,49 @@ namespace TNT::Network::MPS {
     }
     return *this;
   }
+  template <typename F>
+  MPS<F> &MPS<F>::initialize(const Operator::Projection<F> &prj) {
+    // std::cout << "initialize MPS(mpo)" << std::endl;
+    // const Operator::Projection<F> P(config_file, mpo, 2);
+    std::cout << "P[1]" << prj[1] << std::endl;
+
+    std::cout << "P[2]" << prj[2] << std::endl;
+
+    for (ULong l = 0; l < _A.size(); l++) {
+      _A[l] = Tensor::Tensor<F>({dimH, _mbd[l], _mbd[l + 1]});
+
+      _A[l].initialize();
+      //_A[l].normalize_QRD(1);
+    }
+
+    for (ULong l = _A.size() - 1; l > 0; l--) {
+      Tensor::Tensor<F> T;
+
+      std::cout << "INFO: Calculate T from A[" << l - 1 << "]*A[" << l << "]" << std::endl;
+      T("s1',s2',a1,a2") = _A[l - 1]("s1,a1,a") * _A[l]("s2,a,a2") * prj[1]("b,s1,s1'") * prj[2]("b,s2,s2'");
+
+      std::cout << "INFO: Decompose T into A[" << l - 1 << "]*A[" << l << "]" << std::endl;
+
+      auto norm = Tensor::SVDNorm::right;
+      std::tie(_A[l - 1], _S[l - 1], _A[l]) =
+          T("s1',s2',a1,a2").SVD({{"s1',a1,a3", "s2',a3,a2"}}, {norm, _mbd[l], 1E-10});
+
+      /*
+       *Tensor::Tensor<F> N1, N2, N3, N4;
+       * N1("a1,a1'") = _A[l - 1]("s1,a1,a2") * _A[l - 1].conjugate()("s1,a1',a2");
+      N2("a2,a2'") = _A[l - 1]("s1,a1,a2") * _A[l - 1].conjugate()("s1,a1,a2'");
+      N3("a1,a1'") = _A[l]("s1,a1,a2") * _A[l].conjugate()("s1,a1',a2");
+      N4("a2,a2'") = _A[l]("s1,a1,a2") * _A[l].conjugate()("s1,a1,a2'");
+
+      std::cout << "N1=" << N1 << std::endl;
+      std::cout << "N2=" << N2 << std::endl;
+      std::cout << "N3=" << N3 << std::endl;
+      std::cout << "N4=" << N4 << std::endl;*/
+    }
+    _A[0].normalize_QRD(1);
+
+    return *this;
+  }
 
   template <typename F>
   F MPS<F>::operator()(const Operator::MPO<F> &mpo) const {
@@ -100,6 +152,22 @@ namespace TNT::Network::MPS {
     F result = T[length % 2][0];
 
     return result;
+  }
+
+  template <typename F>
+  MPS<F> MPS<F>::operator()(const Operator::Projection<F> &prj) const {
+    assert(length == prj.length() && dimH == prj.dimH());
+
+    MPS<F> res;
+    res.length = length;
+    res.dimB = dimB;
+    res.dimH = dimH;
+    res.conv_tolerance = conv_tolerance;
+    res._A = std::vector<Tensor::Tensor<F>>(length);
+    res._S = std::vector<std::vector<double>>(length - 1);
+    res._mbd = _mbd;
+
+    return res;
   }
 
   template <typename F>

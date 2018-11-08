@@ -27,6 +27,7 @@
 #include <TNT/network/network.h>
 #include <TNT/operator/mpo.h>
 #include <TNT/operator/observable.h>
+#include <TNT/operator/projection.h>
 #include <TNT/operator/sparse/mpo.h>
 #include <TNT/tensor/tensor.h>
 
@@ -50,6 +51,7 @@ namespace TNT::Network::MPS {
     std::string sub;
 
     double conv_tolerance;
+    std::string config_file;
 
   public:
     MPS() : length{0} {}
@@ -60,6 +62,7 @@ namespace TNT::Network::MPS {
     unsigned int size() const { return _A.size(); }
 
     MPS<F> &initialize();
+    MPS<F> &initialize(const Operator::Projection<F> &prj);
 
     MPS<F> &operator()(const std::string &idx) {
       sub = idx;
@@ -84,6 +87,8 @@ namespace TNT::Network::MPS {
 
     std::vector<Measurement<F>> operator()(const Operator::Observable<F> &O) const;
     // std::map<std::array<ULong, 2>, F> correlation(const Tensor::Tensor<F> &O) const;
+
+    MPS<F> operator()(const Operator::Projection<F> &prj) const;
 
     Iterator sweep(State &state);
 
