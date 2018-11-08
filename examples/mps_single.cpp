@@ -68,7 +68,7 @@ int main(int argc, char **argv) {
     std::vector<NumericalType> E(n_max);
 
     for (unsigned int n = 0; n < n_max; n++) {
-      const Operator::MPO<NumericalType> W(config, params);
+      const Operator::MPO<NumericalType> W(config_file, config.hamiltonian.mpo, params);
       const auto W2 = W * W;
 
       const auto output_dir = config.directory("results") + "/" + format(n) + "/" + format(p_i) + "/";

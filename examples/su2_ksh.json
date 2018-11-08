@@ -35,23 +35,24 @@
                 [ "sqrt(x)*U11", "sqrt(x)*V11" ],
                 [ "sqrt(x)*U12", "sqrt(x)*V12" ]
             ]
+        },
+        "projection": {
+            "nearest": [
+                ["L1", "R1"],
+                ["L2", "R2"],
+                ["L3", "R3"],
+                ["L4", "R4"]
+            ]
         }
     },
     "constraints": {
-        "meson": {
-            "operator": "N",
-            "value": 10,
-            "weight": 2
-        },
         "boundary1": {
-            "operator": "F2",
-            "site": 1,
-            "weight": 1E3
+            "operator": "PF0",
+            "site": 1
         },
         "boundary2": {
-            "operator": "E2",
-            "site": 10,
-            "weight": 1E3
+            "operator": "PE0",
+            "site": 100
         }
     },
     "observables": {
@@ -73,6 +74,14 @@
             "file": "ksh-4.hdf5",
             "path": "/HilbertSpace/Operator/N"
         },
+        "PE0": {
+            "file": "ksh-4.hdf5",
+            "path": "/HilbertSpace/Operator/PE0"
+        },
+        "PF0": {
+            "file": "ksh-4.hdf5",
+            "path": "/HilbertSpace/Operator/PF0"
+        },
         "U": {
             "file": "ksh-4.hdf5",
             "path": "/HilbertSpace/Operator/U"
@@ -80,6 +89,14 @@
         "V": {
             "file": "ksh-4.hdf5",
             "path": "/HilbertSpace/Operator/V"
+        },
+        "L": {
+            "file": "ksh-4.hdf5",
+            "path": "/HilbertSpace/Operator/L"
+        },
+        "R": {
+            "file": "ksh-4.hdf5",
+            "path": "/HilbertSpace/Operator/R"
         }
     },
     "parameters": {

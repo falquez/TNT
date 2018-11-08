@@ -28,6 +28,7 @@
 #include <TNT/network/network.h>
 #include <TNT/operator/mpo.h>
 #include <TNT/operator/observable.h>
+#include <TNT/operator/projection.h>
 #include <TNT/tensor/contraction.h>
 #include <TNT/tensor/eigensolver.h>
 #include <TNT/tensor/tensor.h>
@@ -68,9 +69,19 @@ int main(int argc, char **argv) {
     std::vector<NumericalType> E(n_max);
 
     for (unsigned int n = 0; n < n_max; n++) {
-      const Operator::MPO<NumericalType> W(config, params);
+      const Operator::MPO<NumericalType> W(config_file, config.hamiltonian.mpo, params, config.constraints);
+      const Operator::MPO<NumericalType> Wu(config_file, config.hamiltonian.mpo, params);
+
+      const Operator::Projection<NumericalType> P(config.config_file, config.hamiltonian.projection, 2);
+
+      std::cout << W << std::endl;
+
+      std::cout << "P[1]" << P[1] << std::endl;
+      std::cout << "P[2]" << P[2] << std::endl;
+
       std::cout << "INFO: Calculate W2" << std::endl;
-      const auto W2 = W * W;
+      const auto W2 = Wu * Wu;
+      const auto W2c = W * W;
 
       const auto output_dir = config.directory("results") + "/" + format(n) + "/" + format(p_i) + "/";
       const auto network_dir = output_dir + config.directory("network") + "/";
@@ -88,10 +99,17 @@ int main(int argc, char **argv) {
 
       } else {
         std::cout << "INFO: Initializing MPS A[" << n << "]" << std::endl;
+        // A[n].initialize(P);
         A[n].initialize();
         for (unsigned int l = 1; l <= L; l++)
           A[n][l].writeToFile(network_dir + format(l), "/Tensor");
       }
+
+      auto nA = A[n](A[n]);
+
+      std::cout << "Norm A=" << nA << std::endl;
+
+      // exit(0);
 
       // Check if already finished
       if (boost::filesystem::exists(output_dir + "result.txt"))
@@ -139,12 +157,26 @@ int main(int argc, char **argv) {
                            .setTolerance(config.tolerance("eigenvalue"))
                            .optimize(A[n][l]("s1,a1,a") * A[n][r]("s3,a,a2"), Pr);
 
-        auto norm = dir == Network::MPS::Sweep::Direction::Right ? Tensor::SVDNorm::left : Tensor::SVDNorm::right;
+        std::cout << "INFO: Project T into PT" << std::endl;
+        Tensor::Tensor<NumericalType> PT, PT2, dPT1, dPT2;
+        PT("s1',s2',a1,a2") = T("s1,s2,a1,a2") * P[1]("b,s1,s1'") * P[2]("b,s2,s2'");
+        PT2("s1',s2',a1,a2") = PT("s1,s2,a1,a2") * P[1]("b,s1,s1'") * P[2]("b,s2,s2'");
+
+        dPT1 = T - PT;
+        dPT2 = PT - PT2;
+
+        /*std::cout << "T   =" << T << std::endl;
+        std::cout << "PT  =" << PT << std::endl;
+        std::cout << "PT2 =" << PT2 << std::endl;*/
+        std::cout << "dPT1=" << dPT1 << std::endl;
+        std::cout << "dPT2=" << dPT2 << std::endl;
 
         // Perform SVD on T and reassign to A[l], A[r]
+
         std::cout << "INFO: Decompose T into A[" << l << "]*A[" << r << "]" << std::endl;
+        auto norm = dir == Network::MPS::Sweep::Direction::Right ? Tensor::SVDNorm::left : Tensor::SVDNorm::right;
         std::tie(A[n][l], A[n].SV(l), A[n][r]) =
-            T("s1,s3,a1,a2").SVD({{"s1,a1,a3", "s3,a3,a2"}}, {norm, A[n].mbd(l), config.tolerance("svd")});
+            PT("s1,s3,a1,a2").SVD({{"s1,a1,a3", "s3,a3,a2"}}, {norm, A[n].mbd(l), config.tolerance("svd")});
 
         // Store solutions to disk
         A[n][l].writeToFile(network_dir + format(l), "/Tensor");
@@ -172,10 +204,16 @@ int main(int argc, char **argv) {
         }
 
         unsigned int swp = ((state.iteration - 1) / (L - 1)) + 1;
-        double E2 = 0.0;
+        double E0 = -1.0;
+        double E1 = -1.0;
+        double E2 = -1.0;
+        double E3 = -1.0;
         if (swp > config.eigensolver.min_sweeps) {
           std::cout << "INFO: Calculate A[" << n << "](W2)" << std::endl;
+          E0 = A[n](W);
+          E1 = A[n](Wu);
           E2 = A[n](W2);
+          E3 = A[n](W2c);
         }
         E[n] = ew;
         state.eigenvalue = ew;
@@ -187,7 +225,8 @@ int main(int argc, char **argv) {
         std::cout.precision(std::numeric_limits<double>::max_digits10);
         for (const auto &[name, value] : params)
           std::cout << name << "=" << value << " ";
-	std::cout << " w=" << state.eigenvalue / (2 * L * params.at("x")) << " ";
+        std::cout << " w=" << state.eigenvalue / (2 * L * params.at("x")) << " ";
+        std::cout << "E0-ev=" << E0 - ew << " E1-E0=" << E1 - E0 << " E2-E3=" << E2 - E3 << " ";
         std::cout << "ev=" << state.eigenvalue << " var=" << state.variance;
         std::cout << std::endl;
 
