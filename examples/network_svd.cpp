@@ -43,6 +43,21 @@ std::string format(unsigned int n, unsigned int w = 4) {
   return str.str();
 }
 
+int write_observable(const TNT::Network::MPS::MPS<NumericalType> &A,
+		     const TNT::Operator::Observable<NumericalType> &obs, const std::string &obsname) {
+  int rc = 0;
+  std::ofstream ofile(obsname);
+  auto result = A(obs);
+  for (const auto &r : result) {
+    for (const auto &s : r.site)
+      ofile << s << " ";
+    ofile.precision(std::numeric_limits<double>::max_digits10);
+    ofile << r.value << std::endl;
+  }
+  ofile << std::endl;
+  return rc;
+}
+
 int main(int argc, char **argv) {
   using namespace TNT;
   int err = 0;
@@ -76,6 +91,7 @@ int main(int argc, char **argv) {
     const unsigned int n = 0;
     const auto output_dir = config.directory("results") + "/" + format(n) + "/" + format(p_i) + "/";
     const auto network_dir = output_dir + config.directory("network") + "/";
+    const Configuration::Observables<NumericalType> observables(config.config_file, params);
 
     if (!boost::filesystem::exists(output_dir + "result.txt") || boost::filesystem::exists(output_dir + "entropy.txt"))
       continue;
@@ -191,6 +207,12 @@ int main(int argc, char **argv) {
       for (const auto &[n, v] : params)
         ofile << v << " ";
       ofile << eigenvalue << " " << variance << std::endl;
+    }
+
+    // Write observables to text file
+    for (const auto &[i_o, obs] : observables.iterate()) {
+      std::cout << "INFO: Writing " << output_dir + obs.name + ".txt" << std::endl;
+      int rc = write_observable(A, obs, output_dir + obs.name + ".txt");
     }
   }
 }
