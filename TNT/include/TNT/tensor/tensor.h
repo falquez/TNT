@@ -63,6 +63,8 @@ namespace TNT::Tensor {
     // friend class Sparse::EigenSolver<F>;
 
   public:
+    double tolerance = 1E-12;
+
     Tensor() : data{nullptr}, dim{}, stride{}, sub{}, totalDim{0} {}
     Tensor(const std::vector<UInt> &dim);
     Tensor(const std::vector<UInt> &dim, const F initial);
@@ -77,6 +79,7 @@ namespace TNT::Tensor {
 
     Tensor<F> &operator=(const Contraction<F> &tc);
 
+    Tensor<F> &operator+=(const Tensor<F> &M);
     Tensor<F> &operator*=(const Tensor<F> &M);
 
     Tensor<F> operator+(const Tensor<F> &M) const;

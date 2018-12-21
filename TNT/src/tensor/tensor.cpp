@@ -318,13 +318,14 @@ namespace TNT::Tensor {
     return std::sqrt(nrm);
   }
 
-  /*template <typename F>
-  Sparse::Tensor<F> Tensor<F>::sparse() {
-    Sparse::Tensor<F> T(dim);
-    T.readFrom(data.get());
-
-    return std::move(T);
-  }*/
+  template <typename F>
+  Tensor<F> &Tensor<F>::operator+=(const Tensor<F> &M) {
+    // Tensor<F> T(dim);
+    for (UInt i = 0; i < totalDim; i++) {
+      data[i] += M.data[i];
+    }
+    return *this;
+  }
 
   template <typename F>
   Tensor<F> &Tensor<F>::operator*=(const Tensor<F> &M) {
@@ -1028,7 +1029,7 @@ namespace TNT::Tensor {
     out << ")(" << T.size() << "):\n";
     out << "{";
     for (unsigned int i = 0; i < T.size(); i++) {
-      if (std::abs(T[i]) > 1e-11)
+      if (std::abs(T[i]) > T.tolerance)
         std::cout << i << ":" << T[i] << ",";
     }
     out << "}";
