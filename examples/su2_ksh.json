@@ -74,6 +74,10 @@
             "file": "ksh-4.hdf5",
             "path": "/HilbertSpace/Operator/N"
         },
+        "PE": {
+            "file": "ksh-4.hdf5",
+            "path": "/HilbertSpace/Operator/PE"
+        },
         "PE0": {
             "file": "ksh-4.hdf5",
             "path": "/HilbertSpace/Operator/PE0"
