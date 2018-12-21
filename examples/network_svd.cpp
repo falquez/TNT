@@ -77,7 +77,7 @@ int main(int argc, char **argv) {
     const auto output_dir = config.directory("results") + "/" + format(n) + "/" + format(p_i) + "/";
     const auto network_dir = output_dir + config.directory("network") + "/";
 
-    if (!boost::filesystem::exists(output_dir + "result.txt"))
+    if (!boost::filesystem::exists(output_dir + "result.txt") || boost::filesystem::exists(output_dir + "entropy.txt"))
       continue;
 
     std::cout << "INFO: p=" << p_i << " Reading W" << std::endl;
@@ -85,9 +85,6 @@ int main(int argc, char **argv) {
 
     std::cout << "INFO: p=" << p_i << " Calculate W2" << std::endl;
     const auto W2 = W * W;
-
-    // std::cout << std::cout << "INFO: p=" << p_i << " output: " << output_dir << " network: " << network_dir <<
-    // std::endl;
 
     // Read MPS
     Network::MPS::MPS<NumericalType> A(config);
