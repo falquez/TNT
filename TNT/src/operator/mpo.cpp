@@ -49,6 +49,7 @@ namespace TNT::Operator {
       : P{P}, config_file{config_file} {
 
     // const auto H = conf.hamiltonian;
+    std::cout << "INFO: Creating Parser" << std::endl;
     const auto parser = Parser::Parser<Tensor::Tensor<F>, F>(config_file, P);
 
     _length = mpo.length;
@@ -56,11 +57,11 @@ namespace TNT::Operator {
     /*@TODO: generalize this */
     _dimW = mpo.nearest.size() + 2;
 
-    std::cout << "length=" << _length << std::endl;
-
     W = std::vector<Tensor::Tensor<F>>(_length);
 
     for (unsigned int l = 0; l < _length; l++) {
+      std::cout << "INFO: Creating W[" << l << "]" << std::endl;
+
       if (l == 0) {
         W[l] = Tensor::Tensor<F>({1, _dimW, _dimH, _dimH});
         // Parse single site
@@ -132,17 +133,11 @@ namespace TNT::Operator {
     }
 
     for (const auto &[name, cnt] : C) {
-      Tensor::Tensor<F> T;
-      std::cout << "Constraint " << name << std::endl;
-      Tensor::Tensor<F> res = parser.parse(cnt.expression, cnt.site);
-      std::cout << "Site:" << cnt.site << " OP=" << res << std::endl;
       unsigned int l = cnt.site - 1;
-      std::cout << "W=" << W[l] << std::endl;
-
+      Tensor::Tensor<F> res = parser.parse(cnt.expression, l);
+      Tensor::Tensor<F> T;
       T("b1,b2,a1',a2'") = W[l]("b1,b2,a1,a2") * res("a1',a1") * res.conjugate()("a2',a2");
       W[l] = T;
-
-      std::cout << "PWP=" << W[l] << std::endl;
     }
   }
 
