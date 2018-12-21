@@ -57,7 +57,8 @@ namespace TNT::Network::MPS {
     MPS() : length{0} {}
     MPS(const Configuration::Configuration<F> &conf);
 
-    MPS(const unsigned int &dimH, const ULong &length, const unsigned int &dimB);
+    MPS(const ULong &length, const unsigned int dimH = 1, const unsigned int dimB = 1,
+        const double conv_tolerance = 1E-6);
 
     unsigned int size() const { return _A.size(); }
 

@@ -30,8 +30,8 @@
 namespace TNT::Network::MPS {
 
   template <typename F>
-  MPS<F>::MPS(const unsigned int &dimH, const ULong &length, const unsigned int &dimB)
-      : dimH{dimH}, dimB{dimB}, length{length}, conv_tolerance{1E-6} {
+  MPS<F>::MPS(const ULong &length, const unsigned int dimH, const unsigned int dimB, const double conv_tolerance)
+      : dimH{dimH}, dimB{dimB}, length{length}, conv_tolerance{conv_tolerance} {
 
     _A = std::vector<Tensor::Tensor<F>>(length);
     _S = std::vector<std::vector<double>>(length - 1);

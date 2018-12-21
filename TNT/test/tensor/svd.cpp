@@ -57,7 +57,7 @@ using NumericalType = double;
 TEST_CASE("Tensor SVD 2", "[tensor]") {
   using namespace TNT;
 
-  Network::MPS::MPS<NumericalType> A(3, 10, 4);
+  Network::MPS::MPS<NumericalType> A(10, 3, 4);
   A.initialize();
 
   // for (int l = 1; l <= A.size(); l++)
