@@ -58,6 +58,34 @@ int write_observable(const TNT::Network::MPS::MPS<NumericalType> &A,
   return rc;
 }
 
+int calculate_variance(const TNT::Network::MPS::MPS<NumericalType> &A, const TNT::Operator::MPO<NumericalType> &W,
+		       const TNT::Operator::MPO<NumericalType> &W2, const bool calculate_var = true) {
+  int rc = 0;
+  double E1, E2;
+
+  std::cout << "INFO: Calculate A(W)" << std::endl;
+  E1 = A(W);
+
+  std::cout.precision(std::numeric_limits<double>::max_digits10);
+  std::cout << "INFO: ev=" << E1 << std::endl;
+
+  std::cout << "INFO: Calculate A(W2)" << std::endl;
+  if (calculate_var)
+    E2 = A(W2);
+  else
+    E2 = 0.0;
+
+  std::cout.precision(std::numeric_limits<double>::max_digits10);
+  std::cout << "INFO: var=" << E2 << std::endl;
+
+  double eigenvalue = E1;
+  double variance = (E2 - E1 * E1) / (E1 * E1);
+
+  std::cout.precision(std::numeric_limits<double>::max_digits10);
+  std::cout << "INFO: ev=" << eigenvalue << " var=" << variance << std::endl;
+  return rc;
+}
+
 int main(int argc, char **argv) {
   using namespace TNT;
   int err = 0;
@@ -107,6 +135,9 @@ int main(int argc, char **argv) {
     for (unsigned int l = 1; l <= L; l++)
       A[l] = Tensor::Tensor<NumericalType>(network_dir + format(l), "/Tensor");
 
+    std::cout << "INFO: p=" << p_i << " Calculate variance: " << std::endl;
+    calculate_variance(A, W, W2);
+
     for (unsigned int l = 1; l < L / 2; l++) {
       Tensor::Tensor<NumericalType> T;
       const unsigned int r = l + 1;
@@ -119,7 +150,13 @@ int main(int argc, char **argv) {
 
       std::tie(A[l], A.SV(l), A[r]) =
           T("s1,s2,a1,a2").SVD({{"s1,a1,a", "s2,a,a2"}}, {norm, mbd, config.tolerance("eigenvalue")});
+
+      std::cout << "INFO: l=" << l << " r=" << r << " Calculate energy: " << std::endl;
+      calculate_variance(A, W, W2, false);
     }
+
+    std::cout << "INFO: Calculate variance: " << std::endl;
+    calculate_variance(A, W, W2);
 
     for (unsigned int r = L; r - 1 > L / 2; r--) {
       Tensor::Tensor<NumericalType> T;
@@ -133,7 +170,13 @@ int main(int argc, char **argv) {
 
       std::tie(A[l], A.SV(l), A[r]) =
           T("s1,s2,a1,a2").SVD({{"s1,a1,a", "s2,a,a2"}}, {norm, mbd, config.tolerance("eigenvalue")});
+
+      std::cout << "INFO: l=" << l << " r=" << r << " Calculate energy: " << std::endl;
+      calculate_variance(A, W, W2, false);
     }
+
+    std::cout << "INFO: Calculate variance: " << std::endl;
+    calculate_variance(A, W, W2);
 
     {
       Tensor::Tensor<NumericalType> T;
