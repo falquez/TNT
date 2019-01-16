@@ -206,25 +206,51 @@ namespace TNT::Algebra {
   int tensorSVD(const std::vector<UInt> &dim, const std::array<std::vector<UInt>, 2> &links, double *svals, F *svecs,
                 F *data, const Options &options) {
 
-    int err = 0;
+    int err = 0, ret = 0;
     std::vector<UInt> links_tr;
 
-    UInt dimM = Util::multiply(Util::selectU(dim, links[0]));
-    UInt dimN = Util::multiply(Util::selectU(dim, links[1]));
-
-    std::unique_ptr<F[]> A = std::make_unique<F[]>(dimM * dimN);
+    const UInt dimM = Util::multiply(Util::selectU(dim, links[0]));
+    const UInt dimN = Util::multiply(Util::selectU(dim, links[1]));
+    lapack_int nv = 0;
+    unsigned int nvecs = 0;
 
     links_tr.insert(std::end(links_tr), std::begin(links[0]), std::end(links[0]));
     links_tr.insert(std::end(links_tr), std::begin(links[1]), std::end(links[1]));
 
+    std::unique_ptr<F[]> A = std::make_unique<F[]>(dimM * dimN);
+
     err = Algebra::transpose(dim, links_tr, data, A.get());
+    ret = TNT::LAPACK::gesdd<F>(options.lapack_jobz, dimM, dimN, A.get(), dimM, svals, svecs, dimM, svecs + dimM * dimM,
+                                dimN);
 
-    auto ret = TNT::LAPACK::gesdd<F>(options.lapack_jobz, dimM, dimN, A.get(), dimM, svals, svecs, dimM,
-                                     svecs + dimM * dimM, dimN);
+    if (ret == 0) {
+      for (nvecs = 0; std::abs(svals[nvecs]) > options.tolerance; nvecs++)
+        ;
+    } else {
+      std::cout << "INFO: tensorSVD: ret=" << ret << std::endl;
+      char jobu = 'V';
+      char range = 'I';
+      double zero = 0.;
 
-    unsigned int nvecs = 0;
-    for (nvecs = 0; std::abs(svals[nvecs]) > options.tolerance; nvecs++)
-      ;
+      err = Algebra::transpose(dim, links_tr, data, A.get());
+      ret = TNT::LAPACK::gesvdx<F>(jobu, jobu, range, dimM, dimN, A.get(), dimM, zero, zero, 1, options.nv, &nv, svals,
+                                   svecs, dimM, svecs + dimM * dimM, dimN);
+      std::cout << "INFO: gesvdx: ret=" << ret << "nv=" << nv << std::endl;
+      nvecs = nv;
+    }
+
+    if (ret != 0) {
+      std::cout << "INFO: tensorSVD: ret=" << ret << std::endl;
+      exit(1);
+    }
+
+    /*std::cout << "tensorSVD ret=" << ret << " dimM=" << dimM << " dimN=" << dimN << " nvecs=" << nvecs
+              << " options.nv=" << options.nv << std::endl;
+    std::cout << "tensorSVD svals=[";
+    for (unsigned int i = 0; i < dimM; i++) {
+      std::cout << svals[i] << ", ";
+    }
+    std::cout << "]" << std::endl;*/
 
     return std::min(nvecs, options.nv);
   }

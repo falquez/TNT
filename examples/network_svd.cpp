@@ -44,11 +44,16 @@ std::string format(unsigned int n, unsigned int w = 4) {
 }
 
 int write_observable(const TNT::Network::MPS::MPS<NumericalType> &A,
-		     const TNT::Operator::Observable<NumericalType> &obs, const std::string &obsname) {
+                     const TNT::Operator::Observable<NumericalType> &obs, const std::string &obsname,
+                     std::map<std::string, double> parameters, unsigned int L, unsigned int dimB) {
   int rc = 0;
   std::ofstream ofile(obsname);
   auto result = A(obs);
   for (const auto &r : result) {
+    ofile << dimB << " " << L << " ";
+    ofile.precision(std::numeric_limits<double>::max_digits10);
+    for (const auto &[n, v] : parameters)
+      ofile << v << " ";
     for (const auto &s : r.site)
       ofile << s << " ";
     ofile.precision(std::numeric_limits<double>::max_digits10);
@@ -59,7 +64,7 @@ int write_observable(const TNT::Network::MPS::MPS<NumericalType> &A,
 }
 
 int calculate_variance(const TNT::Network::MPS::MPS<NumericalType> &A, const TNT::Operator::MPO<NumericalType> &W,
-		       const TNT::Operator::MPO<NumericalType> &W2, const bool calculate_var = true) {
+                       const TNT::Operator::MPO<NumericalType> &W2, const bool calculate_var = true) {
   int rc = 0;
   double E1, E2;
 
@@ -121,13 +126,14 @@ int main(int argc, char **argv) {
     const auto network_dir = output_dir + config.directory("network") + "/";
     const Configuration::Observables<NumericalType> observables(config.config_file, params);
 
-    if (!boost::filesystem::exists(output_dir + "result.txt") || boost::filesystem::exists(output_dir + "entropy.txt"))
+    if (!boost::filesystem::exists(output_dir + "result.txt") ||
+        boost::filesystem::exists(output_dir + "energy_center.txt"))
       continue;
 
-    std::cout << "INFO: p=" << p_i << " Reading W" << std::endl;
+    std::cout << "INFO: D=" << config.network.dimB << " L=" << L << " p=" << p_i << " Reading W" << std::endl;
     const Operator::MPO<NumericalType> W(config_file, config.hamiltonian.mpo, params);
 
-    std::cout << "INFO: p=" << p_i << " Calculate W2" << std::endl;
+    std::cout << "INFO: D=" << config.network.dimB << " L=" << L << " p=" << p_i << " Calculate W2" << std::endl;
     const auto W2 = W * W;
 
     // Read MPS
@@ -135,7 +141,8 @@ int main(int argc, char **argv) {
     for (unsigned int l = 1; l <= L; l++)
       A[l] = Tensor::Tensor<NumericalType>(network_dir + format(l), "/Tensor");
 
-    std::cout << "INFO: p=" << p_i << " Calculate variance: " << std::endl;
+    std::cout << "INFO: D=" << config.network.dimB << " L=" << L << " p=" << p_i
+              << " Calculate variance: " << std::endl;
     calculate_variance(A, W, W2);
 
     for (unsigned int l = 1; l < L / 2; l++) {
@@ -146,10 +153,17 @@ int main(int argc, char **argv) {
 
       T("s1,s2,a1,a2") = A[l]("s1,a1,a") * A[r]("s2,a,a2");
 
-      std::cout << "INFO: p=" << p_i << " Left Decompose T into A[" << l << "]*A[" << r << "]" << std::endl;
+      std::cout << "INFO: D=" << config.network.dimB << " L=" << L << " p=" << p_i << " Left Decompose T into A[" << l
+                << "]*A[" << r << "]";
+      std::cout << " norm=" << norm << " mbd=" << mbd << " tol=" << config.tolerance("eigenvalue") << std::endl;
 
       std::tie(A[l], A.SV(l), A[r]) =
           T("s1,s2,a1,a2").SVD({{"s1,a1,a", "s2,a,a2"}}, {norm, mbd, config.tolerance("eigenvalue")});
+
+      Tensor::Tensor<NumericalType> T2, dT;
+      T2("s1,s2,a1,a2") = A[l]("s1,a1,a") * A[r]("s2,a,a2");
+      dT = T - T2;
+      std::cout << "INFO: dT=" << dT.norm2() << std::endl;
 
       std::cout << "INFO: l=" << l << " r=" << r << " Calculate energy: " << std::endl;
       calculate_variance(A, W, W2, false);
@@ -166,10 +180,17 @@ int main(int argc, char **argv) {
 
       T("s1,s2,a1,a2") = A[l]("s1,a1,a") * A[r]("s2,a,a2");
 
-      std::cout << "INFO: p=" << p_i << " Right Decompose T into A[" << l << "]*A[" << r << "]" << std::endl;
+      std::cout << "INFO: D=" << config.network.dimB << " L=" << L << " p=" << p_i << " Right Decompose T into A[" << l
+                << "]*A[" << r << "]";
+      std::cout << " norm=" << norm << " mbd=" << mbd << " tol=" << config.tolerance("eigenvalue") << std::endl;
 
       std::tie(A[l], A.SV(l), A[r]) =
           T("s1,s2,a1,a2").SVD({{"s1,a1,a", "s2,a,a2"}}, {norm, mbd, config.tolerance("eigenvalue")});
+
+      Tensor::Tensor<NumericalType> T2, dT;
+      T2("s1,s2,a1,a2") = A[l]("s1,a1,a") * A[r]("s2,a,a2");
+      dT = T - T2;
+      std::cout << "INFO: dT=" << dT.norm2() << std::endl;
 
       std::cout << "INFO: l=" << l << " r=" << r << " Calculate energy: " << std::endl;
       calculate_variance(A, W, W2, false);
@@ -194,11 +215,11 @@ int main(int argc, char **argv) {
       const unsigned int dimB = A[l].dimension()[1];
       auto norm = Tensor::SVDNorm::equal;
 
-      std::ofstream ofile(output_dir + "entropy.txt");
+      std::ofstream ofile(output_dir + "entropy_center.txt");
       ofile << "# D L params.. R i lambda" << std::endl;
       for (int R = 0; R < maxR; R++) {
         PT[R]("s1,s2,a1,a2") = PE[R]("s1,s2,s1',s2'") * T("s1',s2',a1,a2");
-        std::cout << "INFO: p=" << p_i << " Decompose T into A*S*A "
+        std::cout << "INFO: D=" << config.network.dimB << " L=" << L << " p=" << p_i << " Decompose T into A*S*A "
                   << "norm=" << norm << " dimB=" << dimB << " tol=" << config.tolerance("eigenvalue") << std::endl;
 
         std::tie(Ac[R], S[R], Bc[R]) =
@@ -214,11 +235,14 @@ int main(int argc, char **argv) {
       }
       ofile << "#" << std::endl;
 
-      std::cout << "INFO: p=" << p_i << " Right Decompose T into A[" << l << "]*A[" << r << "]" << std::endl;
+      std::cout << "INFO: D=" << config.network.dimB << " L=" << L << " p=" << p_i << " Decompose T into A[" << l
+                << "]*A[" << r << "]" << std::endl;
       std::tie(A[l], A.SV(l), A[r]) =
           T("s1,s2,a1,a2").SVD({{"s1,a1,a", "s2,a,a2"}}, {norm, dimB, config.tolerance("eigenvalue")});
 
-      std::ofstream ofile2(output_dir + "entropy2.txt");
+      std::cout << "INFO: D=" << config.network.dimB << " L=" << L << " p=" << p_i << " Writing "
+                << output_dir + "entropy2_center.txt" << std::endl;
+      std::ofstream ofile2(output_dir + "entropy2_center.txt");
       ofile2.precision(std::numeric_limits<double>::max_digits10);
       const auto svs = A.SV(l);
       for (unsigned int i = 0; i < svs.size(); i++) {
@@ -227,23 +251,24 @@ int main(int argc, char **argv) {
     }
 
     {
-      std::cout << "INFO: p=" << p_i << " Calculate A(W)" << std::endl;
+      std::cout << "INFO: D=" << config.network.dimB << " L=" << L << " p=" << p_i << " Calculate A(W)" << std::endl;
       double E1 = A(W);
-      std::cout << "INFO: p=" << p_i << " Calculate A(W2)" << std::endl;
+      std::cout << "INFO: D=" << config.network.dimB << " L=" << L << " p=" << p_i << " Calculate A(W2)" << std::endl;
       double E2 = A(W2);
 
       double eigenvalue = E1;
       double variance = (E2 - E1 * E1) / (E1 * E1);
 
-      std::cout << "INFO: p=" << p_i << " ";
+      std::cout << "INFO: D=" << config.network.dimB << " L=" << L << " p=" << p_i << " ";
       std::cout.precision(std::numeric_limits<double>::max_digits10);
       for (const auto &[name, value] : params)
         std::cout << name << "=" << value << " ";
       std::cout << "ev=" << eigenvalue << " var=" << variance;
       std::cout << std::endl;
 
-      std::cout << "INFO: p=" << p_i << " Writing " << output_dir + "energy.txt" << std::endl;
-      std::ofstream ofile(output_dir + "energy.txt");
+      std::cout << "INFO: D=" << config.network.dimB << " L=" << L << " p=" << p_i << " Writing "
+                << output_dir + "energy_center.txt" << std::endl;
+      std::ofstream ofile(output_dir + "energy_center.txt");
       ofile << "# D L params.. E var" << std::endl;
       ofile << config.network.dimB << " " << L << " ";
       ofile.precision(std::numeric_limits<double>::max_digits10);
@@ -254,8 +279,9 @@ int main(int argc, char **argv) {
 
     // Write observables to text file
     for (const auto &[i_o, obs] : observables.iterate()) {
-      std::cout << "INFO: Writing " << output_dir + obs.name + ".txt" << std::endl;
-      int rc = write_observable(A, obs, output_dir + obs.name + ".txt");
+      std::cout << "INFO: D=" << config.network.dimB << " L=" << L << " p=" << p_i << " Writing "
+                << output_dir + obs.name + "_center.txt" << std::endl;
+      int rc = write_observable(A, obs, output_dir + obs.name + "_center.txt", params, L, config.network.dimB);
     }
   }
 }
