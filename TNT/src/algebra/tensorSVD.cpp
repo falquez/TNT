@@ -27,19 +27,6 @@
 #include <hptt/hptt.h>
 #include <tcl/tcl.h>
 
-/*template <typename F>
-struct MatVecData {
-  MatVecData(F *data, const std::array<std::vector<int>, 3> &dim, const std::array<std::vector<int>, 3> &idx)
-      : data(data), dim(dim) {
-    subscript[0] = TNT::Util::stringify(idx[0]);
-    subscript[1] = TNT::Util::stringify(idx[1]);
-    subscript[2] = TNT::Util::stringify(idx[2]);
-  }
-  F *data;
-  std::array<std::vector<int>, 3> dim;
-  std::array<std::string, 3> subscript;
-};*/
-
 template <typename F>
 struct SVDTensorData {
   const TNT::Tensor::Contraction<F> &seq;
