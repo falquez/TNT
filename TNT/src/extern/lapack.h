@@ -43,6 +43,15 @@ namespace TNT::LAPACK {
   lapack_int gesdd(char jobz, lapack_int m, lapack_int n, F *a, lapack_int lda, double *s, F *u, lapack_int ldu, F *vt,
                    lapack_int ldvt, int matrix_layout = LAPACK_COL_MAJOR);
 
+  template <typename F>
+  lapack_int gesvd(char jobu, char jobvt, lapack_int m, lapack_int n, F *a, lapack_int lda, double *s, F *u,
+                   lapack_int ldu, F *vt, lapack_int ldvt, int matrix_layout = LAPACK_COL_MAJOR);
+
+  template <typename F>
+  lapack_int gesvdx(char jobu, char jobvt, char range, lapack_int m, lapack_int n, F *a, lapack_int lda, double vl,
+                    double vu, lapack_int il, lapack_int iu, lapack_int *ns, double *s, F *u, lapack_int ldu, F *vt,
+                    lapack_int ldvt, int matrix_layout = LAPACK_COL_MAJOR);
+
 } // namespace TNT::LAPACK
 
 #endif //_TNT_LAPACK_H
