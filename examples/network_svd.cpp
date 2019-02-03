@@ -124,6 +124,9 @@ int main(int argc, char **argv) {
     const unsigned int n = 0;
     const auto output_dir = config.directory("results") + "/" + format(n) + "/" + format(p_i) + "/";
     const auto network_dir = output_dir + config.directory("network") + "/";
+    const auto centered_dir = network_dir + "centered/";
+    boost::filesystem::create_directories(centered_dir);
+
     const Configuration::Observables<NumericalType> observables(config.config_file, params);
 
     if (!boost::filesystem::exists(output_dir + "result.txt") ||
@@ -248,6 +251,9 @@ int main(int argc, char **argv) {
       for (unsigned int i = 0; i < svs.size(); i++) {
         ofile2 << i << " " << svs[i] << std::endl;
       }
+    }
+    for (unsigned int l = 1; l <= L; l++) {
+      A[l].writeToFile(centered_dir + format(l), "/Tensor");
     }
 
     {
