@@ -22,13 +22,13 @@
 #include <limits>
 #include <vector>
 
-#include "tbb/task_scheduler_init.h"
 #include <TNT/configuration/configuration.h>
 #include <TNT/configuration/observables.h>
 #include <TNT/network/mps/mps.h>
 #include <TNT/network/network.h>
 #include <TNT/operator/mpo.h>
 #include <TNT/operator/observable.h>
+#include <TNT/operator/projection.h>
 #include <TNT/tensor/contraction.h>
 #include <TNT/tensor/eigensolver.h>
 #include <TNT/tensor/tensor.h>
@@ -42,6 +42,21 @@ std::string format(unsigned int n, unsigned int w = 4) {
   return str.str();
 }
 
+int write_observable(const TNT::Network::MPS::MPS<NumericalType> &A,
+		     const TNT::Operator::Observable<NumericalType> &obs, const std::string &obsname) {
+  int rc = 0;
+  std::ofstream ofile(obsname);
+  auto result = A(obs);
+  for (const auto &r : result) {
+    for (const auto &s : r.site)
+      ofile << s << " ";
+    ofile.precision(std::numeric_limits<double>::max_digits10);
+    ofile << r.value << std::endl;
+  }
+  ofile << std::endl;
+  return rc;
+}
+
 int main(int argc, char **argv) {
   using namespace TNT;
   int err = 0;
@@ -52,14 +67,15 @@ int main(int argc, char **argv) {
   }
   std::string config_file(argv[1]);
 
-  tbb::task_scheduler_init init(1);
-
   // Read configuration
   const Configuration::Configuration<NumericalType> config(config_file);
 
   const auto parameters = config.parameters;
   const auto L = config.network.length;
-  const unsigned int n_max = config.hamiltonian.n_max;
+  const auto n_max = config.hamiltonian.n_max;
+
+  const auto results_dir = config.directory("results");
+  const auto network_dir = config.directory("network");
 
   for (const auto [p_i, params] : parameters.iterate()) {
 
@@ -68,7 +84,9 @@ int main(int argc, char **argv) {
     std::vector<NumericalType> E(n_max);
 
     for (unsigned int n = 0; n < n_max; n++) {
+      std::cout << "INFO n=" << n << " p=" << p_i << " Calculate W" << std::endl;
       const Operator::MPO<NumericalType> W(config_file, config.hamiltonian.mpo, params);
+
       const auto W2 = W * W;
 
       const auto output_dir = config.directory("results") + "/" + format(n) + "/" + format(p_i) + "/";
@@ -77,7 +95,7 @@ int main(int argc, char **argv) {
       boost::filesystem::create_directories(network_dir);
 
       // Create new MPS
-      A.push_back(Network::MPS::MPS<NumericalType>(config));
+      A[n] = Network::MPS::MPS<NumericalType>(config);
 
       Network::State state(output_dir + "state.json", config.restart);
       if (state.restarted) {
@@ -97,6 +115,7 @@ int main(int argc, char **argv) {
 
       const auto [i_l, i_r, i_dir] = A[n].position(state);
 
+      std::cout << "INFO: Position l=" << i_l << " r=" << i_r << std::endl;
       // Projection Operators
       std::vector<Tensor::TensorScalar<NumericalType>> Pr(n);
 
@@ -106,13 +125,14 @@ int main(int argc, char **argv) {
       std::vector<Tensor::Tensor<NumericalType>> RC(L + 1);
 
       // Initialize Right Contractions
+      std::cout << "INFO: Initializing Right Contractions" << std::endl;
       RC[L] = Tensor::Tensor<NumericalType>({1, 1, 1}, 1.0);
       for (unsigned int l = L - 1; l >= i_l; l--) {
         RC[l]("b1,a1,a1'") = A[n][l + 1]("s,a1,a2") * W[l + 1]("b1,b2,s,s'") * RC[l + 1]("b2,a2,a2'") *
                              A[n][l + 1].conjugate()("s',a1',a2'");
       }
-
       // Initialize Left Contractions
+      std::cout << "INFO: Initializing Left Contractions" << std::endl;
       LC[1] = Tensor::Tensor<NumericalType>({1, 1, 1}, 1.0);
       for (unsigned int l = 1; l < i_r; l++) {
         LC[l + 1]("b2,a2,a2'") =
@@ -125,7 +145,6 @@ int main(int argc, char **argv) {
         auto s2 = dir == Network::MPS::Sweep::Direction::Right ? r : l;
 
         // Define Eigensolver for Operator LC*W*RC
-        std::cout << "INFO: Define Eigensolver for  W[" << s1 << "]" << std::endl;
         Tensor::EigenSolver ES(LC[s1]("b1,a1,a1'") * W[s1]("b1,b2,s1,s1'") * RC[s1]("b2,a2,a2'"));
 
         // Calculate Projection Operators

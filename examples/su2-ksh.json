@@ -3,7 +3,7 @@
         "description": "Example configuration file for the (1+1) Kogut-Susskind Hamiltonian."
     },
     "tolerance": {
-        "convergence": 1e-06,
+        "convergence": 1e-07,
         "eigenvalue": 1e-10,
         "svd": 1e-10
     },
@@ -13,11 +13,11 @@
     },
     "network": {
         "topology": "MPS",
-        "length": 100,
-        "max_bond_dim": 100
+        "length": 200,
+        "max_bond_dim": 200
     },
     "hamiltonian": {
-        "n_max": 10,
+        "n_max": 1,
         "dim": 14,
         "operators": {
             "single": "E2 + y*(sgn(l)*N)",
@@ -52,7 +52,7 @@
         },
         "boundary2": {
             "operator": "PE0",
-            "site": 100
+            "site": 200
         }
     },
     "observables": {
@@ -63,49 +63,45 @@
     },
     "operators": {
         "E2": {
-            "file": "ksh-4.hdf5",
+            "file": "h-4.hdf5",
             "path": "/HilbertSpace/Operator/E2"
         },
         "F2": {
-            "file": "ksh-4.hdf5",
+            "file": "h-4.hdf5",
             "path": "/HilbertSpace/Operator/F2"
         },
         "N": {
-            "file": "ksh-4.hdf5",
+            "file": "h-4.hdf5",
             "path": "/HilbertSpace/Operator/N"
         },
-        "PE": {
-            "file": "ksh-4.hdf5",
-            "path": "/HilbertSpace/Operator/PE"
-        },
         "PE0": {
-            "file": "ksh-4.hdf5",
+            "file": "h-4.hdf5",
             "path": "/HilbertSpace/Operator/PE0"
         },
         "PF0": {
-            "file": "ksh-4.hdf5",
+            "file": "h-4.hdf5",
             "path": "/HilbertSpace/Operator/PF0"
         },
         "U": {
-            "file": "ksh-4.hdf5",
+            "file": "h-4.hdf5",
             "path": "/HilbertSpace/Operator/U"
         },
         "V": {
-            "file": "ksh-4.hdf5",
+            "file": "h-4.hdf5",
             "path": "/HilbertSpace/Operator/V"
         },
         "L": {
-            "file": "ksh-4.hdf5",
+            "file": "h-4.hdf5",
             "path": "/HilbertSpace/Operator/L"
         },
         "R": {
-            "file": "ksh-4.hdf5",
+            "file": "h-4.hdf5",
             "path": "/HilbertSpace/Operator/R"
         }
     },
     "parameters": {
-        "g": [0.0001, 0.01, 5],
-        "r": [0.4, 1.6, 4],
+        "g": [0.08, 0.15, 8],
+        "r": 0.8,
         "x": "1/(g*g)",
         "y": "2*r/g"
     },
@@ -114,7 +110,7 @@
         "use_initial": true
     },
     "output": {
-        "iterations": 10
+        "iterations": 50
     },
     "restart": true
 }

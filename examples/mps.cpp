@@ -84,10 +84,9 @@ int main(int argc, char **argv) {
     std::vector<NumericalType> E(n_max);
 
     for (unsigned int n = 0; n < n_max; n++) {
+      std::cout << "INFO n=" << n << " p=" << p_i << " Calculate W" << std::endl;
       const Operator::MPO<NumericalType> W(config_file, config.hamiltonian.mpo, params, config.constraints);
       const Operator::MPO<NumericalType> Wu(config_file, config.hamiltonian.mpo, params);
-
-      std::cout << "INFO: Calculate W2" << std::endl;
       const auto W2 = Wu * Wu;
 
       const auto output_dir = config.directory("results") + "/" + format(n) + "/" + format(p_i) + "/";
@@ -103,7 +102,6 @@ int main(int argc, char **argv) {
         std::cout << "INFO: Restarting MPS A[" << n << "] from iteration " << state.iteration << std::endl;
         for (unsigned int l = 1; l <= L; l++)
           A[n][l] = Tensor::Tensor<NumericalType>(network_dir + format(l), "/Tensor");
-
       } else {
         std::cout << "INFO: Initializing MPS A[" << n << "]" << std::endl;
         A[n].initialize();
